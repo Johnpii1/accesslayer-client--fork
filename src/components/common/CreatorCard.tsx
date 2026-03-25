@@ -2,8 +2,9 @@ import { useAccount } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import type { Course } from '@/services/course.service';
 import { cn } from '@/lib/utils';
-import { ShoppingCart, Wallet } from 'lucide-react';
+import { ShoppingCart, Wallet, Link as LinkIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
+import showToast from '@/utils/toast.util';
 
 interface CreatorCardProps {
 	creator: Course;
@@ -22,10 +23,14 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 			return;
 		}
 
-		toast.success(`Purchasing keys for ${creator.title}...`, {
-			duration: 3000,
-		});
+		showToast.loading(`Purchasing keys for ${creator.title}...`);
 		// Implementation for contract interaction would go here
+		setTimeout(() => {
+			showToast.transactionSuccess(
+				'Purchase Successful!',
+				`You successfully bought a key for ${creator.title}`
+			);
+		}, 1500);
 	};
 
 	return (
@@ -51,6 +56,17 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 				<p className="font-jakarta text-sm text-white/50">
 					@{creator.instructorId || 'creator'}
 				</p>
+				{creator.socialHandle ? (
+					<div className="mt-2 flex items-center gap-1.5 text-xs text-white/60">
+						<LinkIcon className="size-3 text-amber-500/70" />
+						<span className="truncate">@{creator.socialHandle}</span>
+					</div>
+				) : (
+					<div className="mt-2 flex items-center gap-1.5 text-xs text-white/30 italic">
+						<LinkIcon className="size-3 opacity-50" />
+						<span>No public handle</span>
+					</div>
+				)}
 			</div>
 
 			<div className="flex items-center justify-between gap-4">
