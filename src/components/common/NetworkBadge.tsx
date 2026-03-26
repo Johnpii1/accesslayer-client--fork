@@ -65,4 +65,4 @@ const NetworkBadge = React.forwardRef<HTMLDivElement, NetworkBadgeProps>(
 
 NetworkBadge.displayName = 'NetworkBadge';
 
-export { NetworkBadge, networkBadgeVariants };
+export { NetworkBadge };

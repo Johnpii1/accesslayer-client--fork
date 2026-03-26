@@ -5,162 +5,100 @@ import CreatorCard from '@/components/common/CreatorCard';
 import { CreatorGridSkeleton } from '@/components/common/CreatorSkeleton';
 import EmptyState from '@/components/common/EmptyState';
 
-// Fallback demo data in case API fails
+// ✅ NEW IMPORTS
+import { Button } from '@/components/ui/button';
+import { UnavailableAction } from '@/components/ui/unavailable-action';
+
 const DEMO_CREATORS: Course[] = [
-	{
-		id: '1',
-		title: 'Alex Rivers',
-		description: 'Digital Artist & Illustrator',
-		price: 0.05,
-		instructorId: 'arivers',
-		category: 'Art',
-		level: 'BEGINNER',
-		thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
-	},
-	{
-		id: '2',
-		title: 'Sarah Chen',
-		description: 'Solidity Developer',
-		price: 0.12,
-		instructorId: 'schen_dev',
-		category: 'Tech',
-		level: 'ADVANCED',
-		thumbnail: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
-	},
-	{
-		id: '3',
-		title: 'Marcus Thorne',
-		description: 'Crypto Strategist',
-		price: 0.08,
-		instructorId: 'mthorne',
-		category: 'Finance',
-		level: 'INTERMEDIATE',
-		thumbnail: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
-	},
-	{
-		id: '4',
-		title: 'Elena Vance',
-		description: 'UI/UX Designer',
-		price: 0.04,
-		instructorId: 'evance_design',
-		category: 'Design',
-		level: 'BEGINNER',
-		thumbnail: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop',
-	},
-	{
-		id: '5',
-		title: 'David Kojo',
-		description: 'Music Producer',
-		price: 0.15,
-		instructorId: 'dkojo_beats',
-		category: 'Music',
-		level: 'ADVANCED',
-		thumbnail: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop',
-	},
-	{
-		id: '6',
-		title: 'Yuki Sato',
-		description: 'Motion Designer',
-		price: 0.07,
-		instructorId: 'yuki_s',
-		category: 'Design',
-		level: 'INTERMEDIATE',
-		thumbnail: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop',
-	},
+  {
+    id: '1',
+    title: 'Alex Rivers',
+    description: 'Digital Artist & Illustrator',
+    price: 0.05,
+    instructorId: 'arivers',
+    category: 'Art',
+    level: 'BEGINNER',
+    thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
+  },
 ];
 
 function LandingPage() {
-	const [creators, setCreators] = useState<Course[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [searchQuery, setSearchQuery] = useState('');
+  const [creators, setCreators] = useState<Course[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
-	useEffect(() => {
-		const fetchCreators = async () => {
-			setIsLoading(true);
-			try {
-				const data = await courseService.getCourses();
-				if (data && data.length > 0) {
-					setCreators(data);
-				} else {
-					// Use demo data if API returns empty
-					setCreators(DEMO_CREATORS);
-				}
-			} catch (error) {
-				console.error('Failed to fetch creators:', error);
-				// Fallback to demo data on error
-				setCreators(DEMO_CREATORS);
-			} finally {
-				// Artificial delay for better UX demonstration of skeletons
-				setTimeout(() => setIsLoading(false), 800);
-			}
-		};
+  useEffect(() => {
+    const fetchCreators = async () => {
+      setIsLoading(true);
+      try {
+        const data = await courseService.getCourses();
+        setCreators(data.length > 0 ? data : DEMO_CREATORS);
+      } catch {
+        setCreators(DEMO_CREATORS);
+      } finally {
+        setTimeout(() => setIsLoading(false), 800);
+      }
+    };
 
-		fetchCreators();
-	}, []);
+    fetchCreators();
+  }, []);
 
-	const filteredCreators = useMemo(() => {
-		return creators.filter(
-			creator =>
-				creator.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				creator.instructorId.toLowerCase().includes(searchQuery.toLowerCase())
-		);
-	}, [creators, searchQuery]);
+  const filteredCreators = useMemo(() => {
+    return creators.filter(
+      creator =>
+        creator.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        creator.instructorId.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [creators, searchQuery]);
 
-	const handleResetSearch = () => setSearchQuery('');
+  const handleResetSearch = () => setSearchQuery('');
 
-	return (
-		<main className="relative min-h-screen overflow-x-hidden bg-[linear-gradient(160deg,#08111f_0%,#10213b_45%,#f0b14d_160%)] px-6 py-12 md:px-12">
-			{/* Ambient Background Elements */}
-			<div className="absolute left-[-4rem] top-[10%] size-72 rounded-full bg-amber-300/20 blur-[100px]" />
-			<div className="absolute bottom-[8%] right-[-3rem] size-72 rounded-full bg-emerald-300/15 blur-[100px]" />
-			<div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,186,73,0.1),transparent_40%),radial-gradient(circle_at_bottom_left,rgba(74,222,128,0.08),transparent_35%)]" />
+  return (
+    <main className="relative min-h-screen bg-black px-6 py-12">
+      <div className="mx-auto max-w-7xl">
+        
+        {/* HEADER */}
+        <header className="mb-16 text-center">
+          <h1 className="text-4xl font-bold text-white mb-6">
+            Access Layer
+          </h1>
 
-			<div className="relative z-10 mx-auto max-w-7xl">
-				{/* Header Section */}
-				<header className="mb-16 text-center">
-					<img className="mx-auto mb-8 size-10" src="/icons/logo.svg" />
-					<p className="mb-3 text-sm font-bold uppercase tracking-[0.25em] text-amber-400/80">
-						Creator Keys Marketplace
-					</p>
-					<h1 className="mb-8 font-grotesque text-[clamp(2.5rem,8vw,5rem)] font-extrabold leading-[1.1] tracking-tight text-white">
-						Access Layer
-					</h1>
-					
-					{/* Search Bar Integration */}
-					<div className="mx-auto flex max-w-2xl justify-center">
-						<SearchBar 
-							value={searchQuery} 
-							onChange={setSearchQuery} 
-							className="shadow-2xl shadow-black/20"
-						/>
-					</div>
-				</header>
+          {/* ✅ TOOLTIP BUTTON */}
+          <div className="flex justify-center mb-6">
+            <UnavailableAction disabled={true} reason="Feature coming soon">
+              <Button>Buy Access</Button>
+            </UnavailableAction>
+          </div>
 
-				{/* Marketplace Grid Section */}
-				<section className="mt-12">
-					{isLoading ? (
-						<CreatorGridSkeleton count={6} />
-					) : filteredCreators.length > 0 ? (
-						<div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-							{filteredCreators.map(creator => (
-								<CreatorCard key={creator.id} creator={creator} />
-							))}
-						</div>
-					) : (
-						<div className="flex justify-center py-12">
-							<EmptyState
-								image="/images/no-results.png"
-								title="No creators found"
-								description={`We couldn't find any creators matching "${searchQuery}". Try a different name or handle.`}
-                                onReset={handleResetSearch}
-							/>
-						</div>
-					)}
-				</section>
-			</div>
-		</main>
-	);
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+          />
+        </header>
+
+        {/* CONTENT */}
+        <section>
+          {isLoading ? (
+            <CreatorGridSkeleton count={3} />
+          ) : filteredCreators.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {filteredCreators.map(creator => (
+                <CreatorCard key={creator.id} creator={creator} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+  image="/images/no-results.png"
+  title="No creators found"
+  description="Try a different search"
+  onReset={handleResetSearch}
+/>
+          )}
+        </section>
+
+      </div>
+    </main>
+  );
 }
 
 export default LandingPage;
-
