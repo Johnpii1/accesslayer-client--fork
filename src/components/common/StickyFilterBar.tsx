@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 interface StickyFilterBarProps {
@@ -10,8 +10,6 @@ interface StickyFilterBarProps {
 	className?: string;
 }
 
-const COMPACT_SCROLL_Y = 96;
-
 const StickyFilterBar: React.FC<StickyFilterBarProps> = ({
 	eyebrow = 'Filters',
 	title,
@@ -20,53 +18,15 @@ const StickyFilterBar: React.FC<StickyFilterBarProps> = ({
 	children,
 	className,
 }) => {
-	const [isCompact, setIsCompact] = useState(() =>
-		typeof window !== 'undefined' ? window.scrollY > COMPACT_SCROLL_Y : false
-	);
-
-	useEffect(() => {
-		if (typeof window === 'undefined') {
-			return;
-		}
-
-		let ticking = false;
-
-		const updateCompactState = () => {
-			ticking = false;
-			const nextIsCompact = window.scrollY > COMPACT_SCROLL_Y;
-			setIsCompact(prev => (prev === nextIsCompact ? prev : nextIsCompact));
-		};
-
-		const onScroll = () => {
-			if (ticking) {
-				return;
-			}
-
-			ticking = true;
-			window.requestAnimationFrame(updateCompactState);
-		};
-
-		window.addEventListener('scroll', onScroll, { passive: true });
-
-		return () => {
-			window.removeEventListener('scroll', onScroll);
-		};
-	}, []);
-
 	return (
 		<div
 			className={cn(
-				'sticky top-4 z-20 mb-10 transition-all duration-300 md:top-6',
+				'sticky top-4 z-20 mb-10 md:top-6',
 				className
 			)}
 		>
 			<div
-				className={cn(
-					'relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-950/78 text-white shadow-[0_20px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl transition-all duration-300',
-					isCompact
-						? 'px-4 py-4 md:px-5 md:py-4'
-						: 'px-5 py-5 md:px-7 md:py-6'
-				)}
+				className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-950/78 px-4 py-4 text-white shadow-[0_20px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl md:px-5 md:py-4"
 			>
 				<div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_48%,rgba(245,158,11,0.08))]" />
 
@@ -78,10 +38,7 @@ const StickyFilterBar: React.FC<StickyFilterBarProps> = ({
 							</p>
 							<div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
 								<h2
-									className={cn(
-										'font-grotesque font-bold tracking-tight text-white transition-all duration-300',
-										isCompact ? 'text-lg md:text-xl' : 'text-xl md:text-2xl'
-									)}
+									className="font-grotesque text-xl font-bold tracking-tight text-white md:text-2xl"
 								>
 									{title}
 								</h2>
@@ -92,29 +49,17 @@ const StickyFilterBar: React.FC<StickyFilterBarProps> = ({
 								)}
 							</div>
 							{description && (
-								<p
-									className={cn(
-										'mt-2 max-w-2xl text-sm text-white/62 transition-all duration-300',
-										isCompact
-											? 'max-h-0 overflow-hidden opacity-0'
-											: 'max-h-20 opacity-100'
-									)}
-								>
+								<p className="mt-2 hidden max-w-2xl text-sm text-white/62 md:block">
 									{description}
 								</p>
 							)}
 						</div>
 					</div>
 
-					<div
-						className={cn(
-							'flex flex-col gap-3 transition-all duration-300 md:flex-row md:items-center md:justify-between',
-							isCompact ? 'gap-2' : 'gap-3'
-						)}
-					>
+					<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 						<div className="w-full md:max-w-2xl">{children}</div>
 						<span className="hidden text-xs font-medium uppercase tracking-[0.18em] text-white/45 md:inline-flex">
-							{isCompact ? 'Filters stay pinned while you browse' : 'Scroll to keep filters in reach'}
+							Filters stay pinned while you browse
 						</span>
 					</div>
 				</div>

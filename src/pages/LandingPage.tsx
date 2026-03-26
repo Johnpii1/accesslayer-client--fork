@@ -157,7 +157,7 @@ function LandingPage() {
 								image="/images/no-results.png"
 								title="No creators found"
 								description={`We couldn't find any creators matching "${searchQuery}". Try a different name or handle.`}
-                                onReset={handleResetSearch}
+								onReset={handleResetSearch}
 							/>
 						</div>
 					)}
