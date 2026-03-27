@@ -57,7 +57,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 	return (
 		<div
 			className={cn(
-				'group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 transition-all hover:border-amber-500/30 hover:bg-white/10',
+				'group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 transition-all duration-300 md:hover:-translate-y-0.5 md:hover:border-amber-500/25 md:hover:bg-white/[0.08] md:hover:shadow-[0_12px_32px_-20px_rgba(251,191,36,0.5)]',
 				className
 			)}
 		>
@@ -65,9 +65,9 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 				<img
 					src={creator.thumbnail || '/icons/avatar.png'}
 					alt={creator.title}
-					className="size-full object-cover transition-transform duration-500 group-hover:scale-110"
+					className="size-full object-cover transition-transform duration-500 md:group-hover:scale-[1.03]"
 				/>
-				<div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+				<div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 md:group-hover:opacity-100" />
 			</div>
 
 			<div className="mb-4">
