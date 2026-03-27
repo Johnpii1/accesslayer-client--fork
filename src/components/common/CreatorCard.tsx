@@ -3,13 +3,16 @@ import { useAccount } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import type { Course } from '@/services/course.service';
 import { cn } from '@/lib/utils';
-import { ShoppingCart, Wallet, Link as LinkIcon } from 'lucide-react';
+import { ShoppingCart, Link as LinkIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import showToast from '@/utils/toast.util';
 import TransactionRetryNotice from '@/components/common/TransactionRetryNotice';
 import CardMetaRow from '@/components/common/CardMetaRow';
 import VerifiedBadge from '@/components/common/VerifiedBadge';
-import CompactEmptyWalletState from '@/components/common/CompactEmptyWalletState';
+import CreatorInitialsAvatar from '@/components/common/CreatorInitialsAvatar';
+import WalletConnectCalloutBanner from '@/components/common/WalletConnectCalloutBanner';
+import CreatorSocialLinksList from '@/components/common/CreatorSocialLinksList';
+import TransactionStatusIcon from '@/components/common/TransactionStatusIcon';
 
 interface CreatorCardProps {
 	creator: Course;
@@ -19,7 +22,7 @@ interface CreatorCardProps {
 const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 	const { isConnected } = useAccount();
 	const [transactionState, setTransactionState] = useState<
-		'idle' | 'submitting' | 'failed'
+		'idle' | 'submitting' | 'failed' | 'success'
 	>('idle');
 	const hasFailedOnceRef = useRef(false);
 
@@ -37,18 +40,21 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 			}
 
 			hasFailedOnceRef.current = false;
-			setTransactionState('idle');
+			setTransactionState('success');
 			showToast.transactionSuccess(
 				'Purchase Successful!',
 				`You successfully bought a key for ${creator.title}`
 			);
+
+			window.setTimeout(() => {
+				setTransactionState('idle');
+			}, 1800);
 		}, 1500);
 	};
 
 	const handleBuy = () => {
 		if (!isConnected) {
 			toast.error('Please connect your wallet to purchase keys', {
-				icon: <Wallet className="size-5 text-amber-500" />,
 				duration: 4000,
 			});
 			return;
@@ -65,10 +71,10 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 			)}
 		>
 			<div className="relative mb-4 aspect-square overflow-hidden rounded-xl">
-				<img
-					src={creator.thumbnail || '/icons/avatar.png'}
-					alt={creator.title}
-					className="size-full object-cover transition-transform duration-500 md:group-hover:scale-[1.03]"
+				<CreatorInitialsAvatar
+					name={creator.title}
+					imageSrc={creator.thumbnail}
+					imageClassName="transition-transform duration-500 md:group-hover:scale-[1.03]"
 				/>
 				<div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 md:group-hover:opacity-100" />
 			</div>
@@ -94,9 +100,21 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 								Handle
 							</span>
 						}
-						value={creator.socialHandle ? `@${creator.socialHandle}` : 'No public handle'}
-						valueTitle={creator.socialHandle ? `@${creator.socialHandle}` : undefined}
-						valueClassName={creator.socialHandle ? 'text-white/75' : 'italic text-white/35'}
+						value={
+							creator.socialHandle
+								? `@${creator.socialHandle}`
+								: 'No public handle'
+						}
+						valueTitle={
+							creator.socialHandle
+								? `@${creator.socialHandle}`
+								: undefined
+						}
+						valueClassName={
+							creator.socialHandle
+								? 'text-white/75'
+								: 'italic text-white/35'
+						}
 					/>
 					<CardMetaRow
 						label="Key Price"
@@ -105,6 +123,10 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 						valueClassName="font-grotesque text-base font-black text-amber-400"
 					/>
 				</div>
+				<CreatorSocialLinksList
+					handle={creator.socialHandle}
+					className="mt-4"
+				/>
 			</div>
 
 			<div className="flex items-center justify-end gap-4">
@@ -115,24 +137,30 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 					disabled={transactionState === 'submitting'}
 					className={cn(
 						'rounded-xl font-bold cursor-pointer ',
-						!isConnected &&
-							'border-white/10  hover:bg-white/5'
+						!isConnected && 'border-white/10  hover:bg-white/5'
 					)}
 				>
+					{transactionState === 'success' && (
+						<TransactionStatusIcon status="success" className="mr-2" />
+					)}
+					{transactionState === 'submitting' && (
+						<TransactionStatusIcon status="pending" className="mr-2" />
+					)}
+					{transactionState === 'failed' && (
+						<TransactionStatusIcon status="failed" className="mr-2" />
+					)}
 					<ShoppingCart className="mr-2 size-4" />
-					{transactionState === 'submitting' ? 'Processing...' : 'Buy Key'}
+					{transactionState === 'submitting'
+						? 'Processing...'
+						: transactionState === 'success'
+							? 'Completed'
+							: transactionState === 'failed'
+								? 'Retry Purchase'
+								: 'Buy Key'}
 				</Button>
 			</div>
 
-			{!isConnected && (
-				<div className="mt-4 space-y-3">
-					<div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-widest text-amber-500/70">
-						<Wallet className="size-3" />
-						Wallet Required
-					</div>
-					<CompactEmptyWalletState />
-				</div>
-			)}
+			{!isConnected && <WalletConnectCalloutBanner className="mt-4" />}
 
 			{transactionState === 'failed' && (
 				<TransactionRetryNotice
