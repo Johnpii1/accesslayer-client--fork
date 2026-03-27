@@ -7,6 +7,9 @@ import { ShoppingCart, Wallet, Link as LinkIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import showToast from '@/utils/toast.util';
 import TransactionRetryNotice from '@/components/common/TransactionRetryNotice';
+import VerifiedBadge from '@/components/common/VerifiedBadge';
+import CategoryTag from '@/components/common/CategoryTag';
+import CompactEmptyWalletState from '@/components/common/CompactEmptyWalletState';
 
 interface CreatorCardProps {
 	creator: Course;
@@ -71,12 +74,21 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 			</div>
 
 			<div className="mb-4">
-				<h3 className="font-jakarta text-lg font-bold text-white">
-					{creator.title}
-				</h3>
+				<div className="flex items-center gap-2">
+					<h3 className="font-jakarta text-lg font-bold text-white">
+						{creator.title}
+					</h3>
+					<VerifiedBadge
+						verified={Boolean(creator.isVerified)}
+						reserveSpace={true}
+					/>
+				</div>
 				<p className="font-jakarta text-sm text-white/50">
 					@{creator.instructorId || 'creator'}
 				</p>
+				<div className="mt-2">
+					<CategoryTag label={creator.category} />
+				</div>
 				{creator.socialHandle ? (
 					<div className="mt-2 flex items-center gap-1.5 text-xs text-white/60">
 						<LinkIcon className="size-3 text-amber-500/70" />
@@ -116,9 +128,12 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 			</div>
 
 			{!isConnected && (
-				<div className="mt-3 flex items-center gap-2 text-[10px] font-medium uppercase tracking-widest text-amber-500/70">
-					<Wallet className="size-3" />
-					Wallet Required
+				<div className="mt-4 space-y-3">
+					<div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-widest text-amber-500/70">
+						<Wallet className="size-3" />
+						Wallet Required
+					</div>
+					<CompactEmptyWalletState />
 				</div>
 			)}
 
