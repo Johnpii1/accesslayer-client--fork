@@ -7,8 +7,8 @@ import { ShoppingCart, Wallet, Link as LinkIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import showToast from '@/utils/toast.util';
 import TransactionRetryNotice from '@/components/common/TransactionRetryNotice';
+import CardMetaRow from '@/components/common/CardMetaRow';
 import VerifiedBadge from '@/components/common/VerifiedBadge';
-import CategoryTag from '@/components/common/CategoryTag';
 import CompactEmptyWalletState from '@/components/common/CompactEmptyWalletState';
 
 interface CreatorCardProps {
@@ -60,7 +60,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 	return (
 		<div
 			className={cn(
-				'group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 transition-all duration-300 md:hover:-translate-y-0.5 md:hover:border-amber-500/25 md:hover:bg-white/[0.08] md:hover:shadow-[0_12px_32px_-20px_rgba(251,191,36,0.5)]',
+				'group relative overflow-hidden rounded-2xl border cursor-pointer border-white/10 bg-white/5 p-4 transition-all duration-300 md:hover:-translate-y-0.5 md:hover:border-amber-500/25 md:hover:bg-white/[0.08] md:hover:shadow-[0_12px_32px_-20px_rgba(251,191,36,0.5)]',
 				className
 			)}
 		>
@@ -86,40 +86,37 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 				<p className="font-jakarta text-sm text-white/50">
 					@{creator.instructorId || 'creator'}
 				</p>
-				<div className="mt-2">
-					<CategoryTag label={creator.category} />
+				<div className="mt-3 space-y-1.5">
+					<CardMetaRow
+						label={
+							<span className="inline-flex items-center gap-1.5">
+								<LinkIcon className="size-3 text-amber-500/70" />
+								Handle
+							</span>
+						}
+						value={creator.socialHandle ? `@${creator.socialHandle}` : 'No public handle'}
+						valueTitle={creator.socialHandle ? `@${creator.socialHandle}` : undefined}
+						valueClassName={creator.socialHandle ? 'text-white/75' : 'italic text-white/35'}
+					/>
+					<CardMetaRow
+						label="Key Price"
+						value={`${creator.price} ETH`}
+						truncateValue={false}
+						valueClassName="font-grotesque text-base font-black text-amber-400"
+					/>
 				</div>
-				{creator.socialHandle ? (
-					<div className="mt-2 flex items-center gap-1.5 text-xs text-white/60">
-						<LinkIcon className="size-3 text-amber-500/70" />
-						<span className="truncate">@{creator.socialHandle}</span>
-					</div>
-				) : (
-					<div className="mt-2 flex items-center gap-1.5 text-xs text-white/30 italic">
-						<LinkIcon className="size-3 opacity-50" />
-						<span>No public handle</span>
-					</div>
-				)}
 			</div>
 
-			<div className="flex items-center justify-between gap-4">
-				<div>
-					<p className="text-xs uppercase tracking-wider text-white/40">
-						Key Price
-					</p>
-					<p className="font-grotesque text-xl font-black text-amber-400">
-						{creator.price} ETH
-					</p>
-				</div>
+			<div className="flex items-center justify-end gap-4">
 				<Button
 					onClick={handleBuy}
 					variant={isConnected ? 'default' : 'outline'}
 					size="sm"
 					disabled={transactionState === 'submitting'}
 					className={cn(
-						'rounded-xl font-bold',
+						'rounded-xl font-bold cursor-pointer ',
 						!isConnected &&
-							'border-white/10 text-white/60 hover:bg-white/5'
+							'border-white/10  hover:bg-white/5'
 					)}
 				>
 					<ShoppingCart className="mr-2 size-4" />
