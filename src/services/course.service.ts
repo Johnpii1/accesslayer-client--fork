@@ -6,10 +6,13 @@ export interface Course {
 	title: string;
 	description: string;
 	price: number;
+	creatorShareSupply?: number;
 	instructorId: string;
 	thumbnail?: string;
 	category: string;
 	level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+	socialHandle?: string;
+	isVerified?: boolean;
 }
 
 export interface GetCoursesParams {
@@ -50,9 +53,8 @@ class CourseService extends BaseApiService {
 	// Get enrolled courses - GET /courses/enrolled
 	async getEnrolledCourses(): Promise<Course[]> {
 		try {
-			const response = await this.api.get<APIResponse<Course[]>>(
-				'/courses/enrolled'
-			);
+			const response =
+				await this.api.get<APIResponse<Course[]>>('/courses/enrolled');
 
 			return response.data.data;
 		} catch (error) {
