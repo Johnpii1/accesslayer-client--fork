@@ -14,6 +14,7 @@ export interface Course {
 	socialHandle?: string;
 	isVerified?: boolean;
 	volume24h?: number;
+	change24h?: number;
 }
 
 export interface GetCoursesParams {
