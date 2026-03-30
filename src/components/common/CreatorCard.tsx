@@ -49,7 +49,9 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 			setTransactionState('success');
 			showToast.transactionSuccess(
 				'Purchase Successful!',
-				`You successfully bought a key for ${creator.title}`
+				`You successfully bought a key for ${creator.title}`,
+				'0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+				'https://stellar.expert/explorer/testnet/tx/0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
 			);
 
 			window.setTimeout(() => {
