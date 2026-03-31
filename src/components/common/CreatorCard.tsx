@@ -68,6 +68,10 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 			return;
 		}
 
+		toast.success(`Purchasing keys for ${creator.title}...`, {
+			duration: 3000,
+		});
+		// Implementation for contract interaction would go here
 		runPurchaseAttempt();
 	};
 
