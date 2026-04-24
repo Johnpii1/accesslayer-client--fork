@@ -7,6 +7,8 @@ import { ShoppingCart, Link as LinkIcon, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import showToast from '@/utils/toast.util';
 import TransactionRetryNotice from '@/components/common/TransactionRetryNotice';
+import TransactionFailureDrawer from '@/components/common/TransactionFailureDrawer';
+import type { TransactionFailureDetails } from '@/components/common/TransactionFailureDrawer';
 import CardMetaRow from '@/components/common/CardMetaRow';
 import VerifiedBadge from '@/components/common/VerifiedBadge';
 import CreatorInitialsAvatar from '@/components/common/CreatorInitialsAvatar';
@@ -30,6 +32,10 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 	const [transactionState, setTransactionState] = useState<
 		'idle' | 'submitting' | 'failed' | 'success'
 	>('idle');
+	const [failureDrawerOpen, setFailureDrawerOpen] = useState(false);
+	const [failureDetails, setFailureDetails] = useState<TransactionFailureDetails>({
+		errorMessage: '',
+	});
 	const hasFailedOnceRef = useRef(false);
 
 	const runPurchaseAttempt = () => {
@@ -42,6 +48,18 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 			if (!hasFailedOnceRef.current) {
 				hasFailedOnceRef.current = true;
 				setTransactionState('failed');
+				setFailureDetails({
+					errorMessage: 'Transaction failed: Insufficient balance to complete the purchase.',
+					errorCode: 'ERR_INSUFFICIENT_BALANCE',
+					txHash: '0xabcd1234...failed',
+					developerDetails: {
+						requiredAmount: '0.05 ETH',
+						availableBalance: '0.02 ETH',
+						gasEstimate: '0.001 ETH',
+					},
+					timestamp: Date.now(),
+				});
+				setFailureDrawerOpen(true);
 				return;
 			}
 
@@ -234,6 +252,14 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 					onRetry={runPurchaseAttempt}
 				/>
 			)}
+
+			<TransactionFailureDrawer
+				open={failureDrawerOpen}
+				onOpenChange={setFailureDrawerOpen}
+				failureDetails={failureDetails}
+				onRetry={runPurchaseAttempt}
+				onDismiss={() => setFailureDrawerOpen(false)}
+			/>
 		</div>
 	);
 };

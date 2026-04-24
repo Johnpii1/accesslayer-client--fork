@@ -1,0 +1,146 @@
+import React from 'react';
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, Copy } from 'lucide-react';
+import toast from 'react-hot-toast';
+
+export interface TransactionFailureDetails {
+	txHash?: string;
+	errorCode?: string;
+	errorMessage: string;
+	developerDetails?: Record<string, unknown>;
+	timestamp?: number;
+}
+
+export interface TransactionFailureDrawerProps {
+	open: boolean;
+	onOpenChange?: (open: boolean) => void;
+	failureDetails: TransactionFailureDetails;
+	onRetry?: () => void;
+	onDismiss?: () => void;
+}
+
+const TransactionFailureDrawer: React.FC<TransactionFailureDrawerProps> = ({
+	open,
+	onOpenChange,
+	failureDetails,
+	onRetry,
+	onDismiss,
+}) => {
+	const copyToClipboard = (text: string) => {
+		navigator.clipboard.writeText(text);
+		toast.success('Copied to clipboard');
+	};
+
+	const handleClose = () => {
+		onDismiss?.();
+		onOpenChange?.(false);
+	};
+
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent className="max-w-md">
+				<DialogHeader>
+					<div className="flex items-center gap-3 mb-3">
+						<div className="rounded-full bg-red-500/15 p-3">
+							<AlertCircle className="size-6 text-red-400" />
+						</div>
+						<div>
+							<DialogTitle>Transaction Failed</DialogTitle>
+						</div>
+					</div>
+				</DialogHeader>
+
+				<div className="space-y-4 border-t border-white/5 pt-4">
+					<div>
+						<p className="text-sm font-medium text-white/70 mb-2">
+							Error Message
+						</p>
+						<p className="text-sm text-white/90 rounded-lg bg-white/5 p-3 break-words">
+							{failureDetails.errorMessage}
+						</p>
+					</div>
+
+					{failureDetails.errorCode && (
+						<div>
+							<p className="text-sm font-medium text-white/70 mb-2">
+								Error Code
+							</p>
+							<div className="flex items-center gap-2 rounded-lg bg-white/5 p-3">
+								<code className="text-sm text-amber-400 font-mono flex-1 break-all">
+									{failureDetails.errorCode}
+								</code>
+								<button
+									onClick={() =>
+										copyToClipboard(failureDetails.errorCode!)
+									}
+									className="shrink-0 p-2 hover:bg-white/10 rounded transition-colors"
+									aria-label="Copy error code"
+								>
+									<Copy className="size-4 text-white/60" />
+								</button>
+							</div>
+						</div>
+					)}
+
+					{failureDetails.txHash && (
+						<div>
+							<p className="text-sm font-medium text-white/70 mb-2">
+								Transaction Hash
+							</p>
+							<div className="flex items-center gap-2 rounded-lg bg-white/5 p-3">
+								<code className="text-sm text-white/60 font-mono flex-1 truncate">
+									{failureDetails.txHash}
+								</code>
+								<button
+									onClick={() =>
+										copyToClipboard(failureDetails.txHash!)
+									}
+									className="shrink-0 p-2 hover:bg-white/10 rounded transition-colors"
+									aria-label="Copy transaction hash"
+								>
+									<Copy className="size-4 text-white/60" />
+								</button>
+							</div>
+						</div>
+					)}
+
+					{failureDetails.developerDetails &&
+						Object.keys(failureDetails.developerDetails).length > 0 && (
+							<details className="text-sm cursor-pointer group">
+								<summary className="font-medium text-white/70 group-open:text-white/90 transition-colors">
+									Developer Details
+								</summary>
+								<pre className="mt-2 rounded-lg bg-white/5 p-3 overflow-auto text-xs text-white/60 font-mono">
+									{JSON.stringify(
+										failureDetails.developerDetails,
+										null,
+										2
+									)}
+								</pre>
+							</details>
+						)}
+				</div>
+
+				<DialogFooter className="sm:justify-between">
+					<Button variant="ghost" size="sm" onClick={handleClose}>
+						Dismiss
+					</Button>
+					{onRetry && (
+						<Button size="sm" onClick={onRetry}>
+							Retry Transaction
+						</Button>
+					)}
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+};
+
+export default TransactionFailureDrawer;
