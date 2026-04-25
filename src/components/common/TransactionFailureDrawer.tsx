@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { formatAbsoluteDateTime, formatRelativeTime } from '@/utils/time.utils';
 
 export interface TransactionFailureDetails {
 	txHash?: string;
@@ -43,6 +44,9 @@ const TransactionFailureDrawer: React.FC<TransactionFailureDrawerProps> = ({
 		onOpenChange?.(false);
 	};
 
+	const absoluteTimestamp = formatAbsoluteDateTime(failureDetails.timestamp);
+	const relativeTimestamp = formatRelativeTime(failureDetails.timestamp);
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-md">
@@ -58,6 +62,24 @@ const TransactionFailureDrawer: React.FC<TransactionFailureDrawerProps> = ({
 				</DialogHeader>
 
 				<div className="space-y-4 border-t border-white/5 pt-4">
+					{failureDetails.timestamp && (
+						<div>
+							<p className="text-sm font-medium text-white/70 mb-2">
+								Time
+							</p>
+							<p
+								className="text-sm text-white/80 rounded-lg bg-white/5 p-3"
+								title={absoluteTimestamp ?? undefined}
+							>
+								{relativeTimestamp}
+								{absoluteTimestamp ? (
+									<span className="ml-2 text-white/45">
+										({absoluteTimestamp})
+									</span>
+								) : null}
+							</p>
+						</div>
+					)}
 					<div>
 						<p className="text-sm font-medium text-white/70 mb-2">
 							Error Message
