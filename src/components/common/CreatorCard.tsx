@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useAccount } from 'wagmi';
-import { Button } from '@/components/ui/button';
+import { AsyncButton } from '@/components/ui/async-button';
 import type { Course } from '@/services/course.service';
 import { cn } from '@/lib/utils';
 import { ShoppingCart, Link as LinkIcon, TrendingUp } from 'lucide-react';
@@ -101,7 +101,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 	return (
 		<div
 			className={cn(
-				'group relative overflow-hidden rounded-2xl border cursor-pointer border-white/10 bg-white/5 p-4 transition-all duration-300 md:hover:-translate-y-0.5 md:hover:border-amber-500/25 md:hover:bg-white/[0.08] md:hover:shadow-[0_12px_32px_-20px_rgba(251,191,36,0.5)]',
+				'group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 transition-all duration-300 focus-within:ring-2 focus-within:ring-amber-400/40 focus-within:ring-offset-2 focus-within:ring-offset-slate-950 md:hover:-translate-y-0.5 md:hover:border-amber-500/25 md:hover:bg-white/[0.08] md:hover:shadow-[0_12px_32px_-20px_rgba(251,191,36,0.5)]',
 				className
 			)}
 		>
@@ -215,34 +215,30 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 			</div>
 
 			<div className="flex items-center justify-end gap-4">
-				<Button
+				<AsyncButton
 					onClick={handleBuy}
 					variant={isConnected ? 'default' : 'outline'}
 					size="sm"
-					disabled={transactionState === 'submitting'}
+					isPending={transactionState === 'submitting'}
+					pendingText="Processing..."
 					className={cn(
-						'rounded-xl font-bold cursor-pointer ',
+						'rounded-xl font-bold',
 						!isConnected && 'border-white/10  hover:bg-white/5'
 					)}
 				>
 					{transactionState === 'success' && (
 						<TransactionStatusIcon status="success" className="mr-2" />
 					)}
-					{transactionState === 'submitting' && (
-						<TransactionStatusIcon status="pending" className="mr-2" />
-					)}
 					{transactionState === 'failed' && (
 						<TransactionStatusIcon status="failed" className="mr-2" />
 					)}
 					<ShoppingCart className="mr-2 size-4" />
-					{transactionState === 'submitting'
-						? 'Processing...'
-						: transactionState === 'success'
-							? 'Completed'
-							: transactionState === 'failed'
-								? 'Retry Purchase'
-								: 'Buy Key'}
-				</Button>
+					{transactionState === 'success'
+						? 'Completed'
+						: transactionState === 'failed'
+							? 'Retry Purchase'
+							: 'Buy Key'}
+				</AsyncButton>
 			</div>
 
 			<BuyActionHelperText state={transactionState} className="mt-4" />

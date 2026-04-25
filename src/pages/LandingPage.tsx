@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { courseService, type Course } from '@/services/course.service';
 import SearchBar from '@/components/common/SearchBar';
 import StickyFilterBar from '@/components/common/StickyFilterBar';
@@ -114,8 +114,11 @@ const DEMO_CREATORS: Course[] = [
 ];
 
 const CREATOR_SORT_KEY = 'accesslayer.creator-sort';
+const CREATOR_PAGE_KEY = 'accesslayer.creator-page';
+const CREATOR_SCROLL_KEY = 'accesslayer.creator-scrollY';
 const MAX_CREATOR_FETCH_RETRIES = 3;
 const BASE_RETRY_DELAY_MS = 800;
+const PAGE_SIZE = 6;
 
 type SortOption = 'featured' | 'price-asc' | 'price-desc' | 'supply-desc';
 
@@ -137,6 +140,13 @@ function LandingPage() {
 	const [fetchRetryAttempt, setFetchRetryAttempt] = useState(0);
 	const [showRetryBanner, setShowRetryBanner] = useState(false);
 	const [finalFetchError, setFinalFetchError] = useState('');
+	const [page, setPage] = useState(() => {
+		if (typeof window === 'undefined') return 0;
+		const saved = window.sessionStorage.getItem(CREATOR_PAGE_KEY);
+		const parsed = saved ? Number(saved) : 0;
+		return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+	});
+	const pendingScrollRestoreRef = useRef<number | null>(null);
 
 	const trimmedSearchQuery = searchQuery.trim();
 	const hasInvalidSearchInput = /[^a-zA-Z0-9_\s-]/.test(trimmedSearchQuery);
@@ -149,6 +159,29 @@ function LandingPage() {
 			window.localStorage.setItem(CREATOR_SORT_KEY, sortOption);
 		}
 	}, [sortOption]);
+
+	useEffect(() => {
+		if (typeof window === 'undefined') return;
+		window.sessionStorage.setItem(CREATOR_PAGE_KEY, String(page));
+	}, [page]);
+
+	useEffect(() => {
+		if (typeof window === 'undefined') return;
+		const handleScroll = () => {
+			window.sessionStorage.setItem(CREATOR_SCROLL_KEY, String(window.scrollY));
+		};
+		window.addEventListener('scroll', handleScroll, { passive: true });
+		return () => window.removeEventListener('scroll', handleScroll);
+	}, []);
+
+	useEffect(() => {
+		if (typeof window === 'undefined') return;
+		const savedScroll = window.sessionStorage.getItem(CREATOR_SCROLL_KEY);
+		if (!savedScroll) return;
+		const parsed = Number(savedScroll);
+		if (!Number.isFinite(parsed)) return;
+		window.scrollTo({ top: parsed });
+	}, []);
 
 	useEffect(() => {
 		const fetchCreators = async () => {
@@ -221,6 +254,31 @@ function LandingPage() {
 		}
 		return sorted;
 	}, [creators, trimmedSearchQuery, hasInvalidSearchInput, sortOption]);
+
+	useEffect(() => {
+		setPage(0);
+	}, [trimmedSearchQuery, sortOption]);
+
+	const totalPages = Math.max(1, Math.ceil(filteredCreators.length / PAGE_SIZE));
+	const safePage = Math.min(page, totalPages - 1);
+	const pagedCreators = useMemo(() => {
+		const start = safePage * PAGE_SIZE;
+		return filteredCreators.slice(start, start + PAGE_SIZE);
+	}, [filteredCreators, safePage]);
+
+	useEffect(() => {
+		if (pendingScrollRestoreRef.current == null) return;
+		const target = pendingScrollRestoreRef.current;
+		pendingScrollRestoreRef.current = null;
+		requestAnimationFrame(() => {
+			window.scrollTo({ top: target });
+		});
+	}, [safePage, pagedCreators.length]);
+
+	const handlePageChange = (nextPage: number) => {
+		pendingScrollRestoreRef.current = window.scrollY;
+		setPage(nextPage);
+	};
 
 	const handleResetSearch = () => setSearchQuery('');
 
@@ -366,9 +424,36 @@ function LandingPage() {
 								</div>
 							)}
 							<div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-								{filteredCreators.map(creator => (
+								{pagedCreators.map(creator => (
 									<CreatorCard key={creator.id} creator={creator} />
 								))}
+							</div>
+							<div className="mt-8 flex items-center justify-center gap-3">
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									disabled={safePage === 0}
+									onClick={() => handlePageChange(Math.max(0, safePage - 1))}
+								>
+									Previous
+								</Button>
+								<span className="text-xs text-white/60">
+									Page {safePage + 1} of {totalPages}
+								</span>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									disabled={safePage >= totalPages - 1}
+									onClick={() =>
+										handlePageChange(
+											Math.min(totalPages - 1, safePage + 1)
+										)
+									}
+								>
+									Next
+								</Button>
 							</div>
 						</div>
 					) : (
