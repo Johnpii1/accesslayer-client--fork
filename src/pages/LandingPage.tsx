@@ -700,6 +700,7 @@ function LandingPage() {
 				<SectionDivider
 					title="Transaction timeline pattern"
 					spacing="relaxed"
+					isEmpty={false}
 				/>
 				<MarketplaceSection spacing="relaxed">
 					<EmptyTransactionTimelineState />

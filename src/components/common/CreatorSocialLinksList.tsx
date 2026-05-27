@@ -12,6 +12,8 @@ interface CreatorSocialLinksListProps {
 	handle?: string;
 	/** Override the default empty-state placeholder copy. */
 	emptyPlaceholder?: string;
+	/** If true, returns null instead of a placeholder when handle is missing. */
+	allowEmpty?: boolean;
 	className?: string;
 }
 
@@ -27,9 +29,14 @@ interface SocialLinkItem {
 const CreatorSocialLinksList: React.FC<CreatorSocialLinksListProps> = ({
 	handle,
 	emptyPlaceholder = DEFAULT_EMPTY_PLACEHOLDER,
+	allowEmpty = false,
 	className,
 }) => {
 	if (!handle?.trim()) {
+		if (allowEmpty) {
+			return null;
+		}
+
 		return (
 			<div
 				role="note"

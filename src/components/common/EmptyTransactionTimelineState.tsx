@@ -14,7 +14,7 @@ interface TimelineEntry {
 	status: 'confirmed' | 'pending' | 'failed';
 }
 
-const TIMELINE_ENTRIES: TimelineEntry[] = [
+const DEFAULT_TIMELINE_ENTRIES: TimelineEntry[] = [
 	{
 		id: 'entry-1',
 		action: 'Buy',
@@ -43,8 +43,19 @@ const TIMELINE_ENTRIES: TimelineEntry[] = [
 
 const shortenTxHash = (hash: string) => `${hash.slice(0, 8)}...${hash.slice(-6)}`;
 
-const EmptyTransactionTimelineState: React.FC = () => {
+interface EmptyTransactionTimelineStateProps {
+	/** Optional transaction data. If provided and empty, the component returns null. */
+	data?: TimelineEntry[];
+}
+
+const EmptyTransactionTimelineState: React.FC<EmptyTransactionTimelineStateProps> = ({
+	data = DEFAULT_TIMELINE_ENTRIES,
+}) => {
 	const [copyStateById, setCopyStateById] = useState<Record<string, CopyState>>({});
+
+	if (!data || data.length === 0) {
+		return null;
+	}
 
 	const copyTxHash = async (entryId: string, txHash: string) => {
 		try {
@@ -77,7 +88,7 @@ const EmptyTransactionTimelineState: React.FC = () => {
 				</div>
 
 				<div className="space-y-2">
-					{TIMELINE_ENTRIES.map(entry => {
+					{data.map(entry => {
 						const copyState = copyStateById[entry.id] ?? 'idle';
 						const isSuccess = copyState === 'success';
 						const isError = copyState === 'error';

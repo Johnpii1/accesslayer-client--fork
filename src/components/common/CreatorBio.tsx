@@ -7,6 +7,8 @@ interface CreatorBioProps {
 	fallback?: string;
 	/** Variant — `card` is muted/italic for list rows, `profile` is slightly more prominent for the detail header. */
 	variant?: 'card' | 'profile';
+	/** If true, returns null instead of a fallback when bio is missing. */
+	allowEmpty?: boolean;
 	className?: string;
 }
 
@@ -33,12 +35,17 @@ const CreatorBio: React.FC<CreatorBioProps> = ({
 	bio,
 	fallback = DEFAULT_FALLBACK,
 	variant = 'card',
+	allowEmpty = false,
 	className,
 }) => {
 	const trimmed = bio?.trim();
 	const styles = variantClasses[variant];
 
 	if (!trimmed) {
+		if (allowEmpty) {
+			return null;
+		}
+
 		return (
 			<p className={cn(styles.fallback, className)} aria-label="Bio not provided">
 				{fallback}
