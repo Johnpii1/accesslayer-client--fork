@@ -32,6 +32,8 @@ interface CreatorCardProps {
 	className?: string;
 }
 
+const creatorBadgeRowClass = 'mt-2 flex items-center gap-1.5';
+
 const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 	const { isConnected } = useAccount();
 	const { isMismatch: isNetworkMismatch, expectedChainName } = useNetworkMismatch();
@@ -116,7 +118,11 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 				className
 			)}
 		>
-			<div className="relative mb-4 aspect-square overflow-hidden rounded-xl">
+			<div
+				className="relative mb-4 aspect-square overflow-hidden rounded-xl"
+				role="img"
+				aria-labelledby={`creator-name-${creator.id}`}
+			>
 				<CreatorInitialsAvatar
 					name={creator.title}
 					creatorId={creator.id}
@@ -126,7 +132,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 				<div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 md:group-hover:opacity-100" />
 				{creator.volume24h !== undefined && (
 					<div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-slate-950/75 border border-white/10 px-2.5 py-1 backdrop-blur-md">
-						<TrendingUp className="size-3 text-emerald-400" />
+						<TrendingUp className="creator-action-icon text-emerald-400" />
 						<span className="text-xs font-bold text-white/90">
 							{creator.volume24h > 0
 								? `${formatCompactNumber(creator.volume24h)} ETH`
@@ -138,7 +144,10 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 
 			<div className="mb-4">
 				<div className="flex items-center gap-2 flex-wrap">
-					<h3 className="font-jakarta text-lg font-bold text-white">
+					<h3
+						id={`creator-name-${creator.id}`}
+						className="font-jakarta text-lg font-bold text-white"
+					>
 						{creator.title}
 					</h3>
 					<VerifiedBadge
@@ -156,12 +165,17 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 
 				{creator.socialHandle ? (
 					<div className="marketplace-label-muted mt-2 flex items-center gap-1.5 text-xs">
-						<LinkIcon className="size-3 text-amber-500/70" />
+						<LinkIcon className="creator-action-icon text-amber-500/70" />
 						<span className="truncate">@{creator.socialHandle}</span>
 					</div>
 				) : (
-					<div className="mt-2 flex items-center gap-1.5 text-xs text-white/30 italic">
-						<LinkIcon className="size-3 opacity-50" />
+					<div
+						className={cn(
+							creatorBadgeRowClass,
+							'text-xs text-white/30 italic'
+						)}
+					>
+						<LinkIcon className="creator-action-icon opacity-50" />
 						<span>No public handle</span>
 					</div>
 				)}
@@ -184,7 +198,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 					<CardMetaRow
 						label={
 							<span className="inline-flex items-center gap-1.5">
-								<LinkIcon className="size-3 text-amber-500/70" />
+								<LinkIcon className="creator-action-icon text-amber-500/70" />
 								Handle
 							</span>
 						}
@@ -242,7 +256,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, className }) => {
 					{transactionState === 'failed' && (
 						<TransactionStatusIcon status="failed" />
 					)}
-					<ShoppingCart className="size-4" />
+					<ShoppingCart className="creator-action-icon" />
 					{transactionState === 'submitting'
 						? 'Processing...'
 						: transactionState === 'success'

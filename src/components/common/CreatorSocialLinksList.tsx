@@ -12,6 +12,8 @@ interface CreatorSocialLinksListProps {
 	handle?: string;
 	/** Override the default empty-state placeholder copy. */
 	emptyPlaceholder?: string;
+	/** If true, returns null instead of a placeholder when handle is missing. */
+	allowEmpty?: boolean;
 	className?: string;
 }
 
@@ -27,9 +29,14 @@ interface SocialLinkItem {
 const CreatorSocialLinksList: React.FC<CreatorSocialLinksListProps> = ({
 	handle,
 	emptyPlaceholder = DEFAULT_EMPTY_PLACEHOLDER,
+	allowEmpty = false,
 	className,
 }) => {
 	if (!handle?.trim()) {
+		if (allowEmpty) {
+			return null;
+		}
+
 		return (
 			<div
 				role="note"
@@ -80,11 +87,11 @@ const CreatorSocialLinksList: React.FC<CreatorSocialLinksListProps> = ({
 						href={url}
 						target="_blank"
 						rel="noreferrer"
-						className="link-action-chip group inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-[11px] font-semibold text-white/80 transition-colors hover:border-amber-400/40 hover:bg-amber-400/10 hover:text-amber-100"
+						className="link-action-chip group inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 text-[11px] font-semibold text-white/80 transition-all hover:border-amber-400/40 hover:bg-amber-400/10 hover:text-amber-100 focus-visible:border-amber-400/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 					>
 						<Icon className="size-3.5" />
 						<span>{label}</span>
-						<LinkIcon className="size-3 opacity-0 transition-opacity group-hover:opacity-80" />
+						<LinkIcon className="size-3 opacity-0 transition-opacity group-hover:opacity-80 group-focus-visible:opacity-80" />
 					</a>
 				</li>
 			))}

@@ -98,7 +98,9 @@ const TradeDialog: React.FC<TradeDialogProps> = ({
 						data-testid="trade-dialog-amount"
 					/>
 					<div className="flex flex-wrap items-center gap-2 text-xs text-white/45">
-						<span>Holdings: {formatNumber(availableHoldings)} keys</span>
+						<span aria-label={`Current wallet holdings: ${formatNumber(availableHoldings)} keys`}>
+							Holdings: {formatNumber(availableHoldings)} keys
+						</span>
 						{side === 'sell' &&
 							availableHoldings > 0 &&
 							Number.isFinite(parsedAmount) &&

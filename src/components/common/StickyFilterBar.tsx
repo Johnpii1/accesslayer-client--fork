@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
@@ -24,10 +24,33 @@ const StickyFilterBar: React.FC<StickyFilterBarProps> = ({
 	onReset,
 	showReset,
 }) => {
+	const [announcedCount, setAnnouncedCount] = useState<number | undefined>(
+		resultCount
+	);
+
+	// Debounce result count announcements so screen readers don't stutter
+	// on every individual keystroke during a search.
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			setAnnouncedCount(resultCount);
+		}, 500);
+		return () => clearTimeout(timer);
+	}, [resultCount]);
+
+	const announcementText =
+		typeof announcedCount === 'number'
+			? `${announcedCount} ${announcedCount === 1 ? 'result' : 'results'} found.`
+			: '';
+
 	return (
 		<div className={cn('sticky top-4 z-20 mb-10 md:top-6', className)}>
 			<div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-950/78 px-4 py-4 text-white shadow-[0_20px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl md:px-5 md:py-4">
 				<div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_48%,rgba(245,158,11,0.08))]" />
+
+				{/* Hidden live region for search result announcements */}
+				<div className="sr-only" aria-live="polite" role="status">
+					{announcementText}
+				</div>
 
 				<div className="relative flex flex-col gap-4">
 					<div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -40,7 +63,10 @@ const StickyFilterBar: React.FC<StickyFilterBarProps> = ({
 									{title}
 								</h2>
 								{typeof resultCount === 'number' && (
-									<span className="inline-flex items-center rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs font-medium text-white/75">
+									<span
+										className="inline-flex items-center rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs font-medium text-white/75"
+										aria-hidden="true"
+									>
 										{resultCount}{' '}
 										{resultCount === 1 ? 'result' : 'results'}
 									</span>

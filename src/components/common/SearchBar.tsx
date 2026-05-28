@@ -8,6 +8,7 @@ interface SearchBarProps {
 	placeholder?: string;
 	className?: string;
 	validationMessage?: string;
+	isLoading?: boolean;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
@@ -16,7 +17,23 @@ const SearchBar: React.FC<SearchBarProps> = ({
 	placeholder = 'Search creators by name or handle...',
 	className,
 	validationMessage,
+	isLoading = false,
 }) => {
+	if (isLoading) {
+		return (
+			<div className={cn('w-full max-w-md', className)}>
+				<div className="relative">
+					<div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+						<div className="size-5 rounded bg-white/20 skeleton-shimmer" />
+					</div>
+					<div className="block w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-3">
+						<div className="h-5 w-48 rounded bg-white/20 skeleton-shimmer" />
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div className={cn('w-full max-w-md', className)}>
 			<div className="relative">

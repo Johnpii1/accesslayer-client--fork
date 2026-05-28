@@ -4,10 +4,10 @@ import TradeDialog from '@/components/common/TradeDialog';
 
 /**
  * The dialog's focus order is part of its accessibility contract — keyboard
- * users tab through `amount input → Cancel → Confirm`, matching the
- * left-to-right visual order. These tests guard against future refactors
- * that accidentally swap Cancel and Confirm in the DOM (which would also
- * swap them in the tab sequence) or remove the marker attributes.
+ * users wrap through `Close → amount input → Cancel → Confirm`, matching
+ * the visual top-to-bottom and left-to-right order. These tests guard
+ * against future refactors that accidentally swap these elements in the
+ * DOM (which would also swap them in the tab sequence) or remove markers.
  */
 describe('TradeDialog focus order', () => {
 	function renderDialog(overrides: Partial<React.ComponentProps<typeof TradeDialog>> = {}) {
@@ -24,7 +24,7 @@ describe('TradeDialog focus order', () => {
 		);
 	}
 
-	it('renders the focus-order markers on the three primary controls', () => {
+	it('renders the focus-order markers on the primary controls', () => {
 		renderDialog();
 
 		expect(screen.getByTestId('trade-dialog-amount')).toHaveAttribute(
@@ -41,20 +41,21 @@ describe('TradeDialog focus order', () => {
 		);
 	});
 
-	it('orders the controls in DOM as amount → Cancel → Confirm so tab sequence matches', () => {
+	it('orders the controls in DOM as Close → amount → Cancel → Confirm so tab sequence matches', () => {
 		renderDialog();
 
-		const ordered = Array.from(
-			document.querySelectorAll('[data-focus-order]')
+		const elements = Array.from(
+			document.querySelectorAll('[data-slot="dialog-close"], [data-focus-order]')
 		).map(el => ({
-			testId: el.getAttribute('data-testid'),
-			order: el.getAttribute('data-focus-order'),
+			identifier: el.getAttribute('data-testid') || el.getAttribute('data-slot'),
+			order: el.getAttribute('data-focus-order') || '0',
 		}));
 
-		expect(ordered).toEqual([
-			{ testId: 'trade-dialog-amount', order: '1' },
-			{ testId: 'trade-dialog-cancel', order: '2' },
-			{ testId: 'trade-dialog-confirm', order: '3' },
+		expect(elements).toEqual([
+			{ identifier: 'dialog-close', order: '0' },
+			{ identifier: 'trade-dialog-amount', order: '1' },
+			{ identifier: 'trade-dialog-cancel', order: '2' },
+			{ identifier: 'trade-dialog-confirm', order: '3' },
 		]);
 	});
 
