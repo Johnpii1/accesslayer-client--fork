@@ -28,6 +28,8 @@ interface MarketplaceSectionProps
 		React.HTMLAttributes<HTMLElement>,
 		VariantProps<typeof marketplaceSectionVariants> {
 	as?: 'section' | 'div' | 'header' | 'footer';
+	/** If true, the section and its spacing/dividers will not be rendered. */
+	isEmpty?: boolean;
 }
 
 const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
@@ -35,9 +37,14 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
 	spacing,
 	container,
 	className,
+	isEmpty = false,
 	as: Tag = 'section',
 	...props
 }) => {
+	if (isEmpty) {
+		return null;
+	}
+
 	return (
 		<Tag
 			className={cn(

@@ -6,6 +6,8 @@ interface SectionDividerProps {
 	title?: string;
 	spacing?: SectionDividerSpacing;
 	className?: string;
+	/** If true, the divider will not be rendered. */
+	isEmpty?: boolean;
 }
 
 const spacingClasses: Record<SectionDividerSpacing, string> = {
@@ -18,7 +20,12 @@ function SectionDivider({
 	title,
 	spacing = 'default',
 	className,
+	isEmpty = false,
 }: SectionDividerProps) {
+	if (isEmpty) {
+		return null;
+	}
+
 	return (
 		<div
 			className={cn(
