@@ -42,7 +42,6 @@ export function useStellarConnectionQuality(
 		setIsChecking(true);
 
 		let isActive = true;
-		let intervalId: number | undefined;
 
 		const sampleConnection = async () => {
 			setIsChecking(true);
@@ -73,13 +72,11 @@ export function useStellarConnectionQuality(
 		};
 
 		void sampleConnection();
-		intervalId = window.setInterval(sampleConnection, pollIntervalMs);
+		const intervalId = window.setInterval(sampleConnection, pollIntervalMs);
 
 		return () => {
 			isActive = false;
-			if (intervalId) {
-				window.clearInterval(intervalId);
-			}
+			window.clearInterval(intervalId);
 		};
 	}, [pollIntervalMs, provider]);
 
