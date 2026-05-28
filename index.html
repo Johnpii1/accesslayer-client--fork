@@ -58,6 +58,105 @@
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 	</head>
 	<body>
+		<!--
+			#299: No-script fallback for key UI actions. The marketplace is a
+			client-rendered SPA (Vite), so without JavaScript the `#root`
+			container stays empty and every interactive surface — search,
+			filters, buy/sell, wallet connect, profile pattern — is
+			unavailable. This block is the one place a real user with JS
+			disabled can see explanatory copy; the same noscript element
+			covers the whole interactive area in a single place rather than
+			being sprinkled per-action across React components (which would
+			never mount without JS anyway).
+
+			Styling is inlined so it works even if external CSS is not
+			fetched, and the tone matches the rest of the app.
+		-->
+		<noscript>
+			<style>
+				.noscript-fallback {
+					min-height: 100vh;
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					padding: 2rem 1.5rem;
+					background: linear-gradient(
+						160deg,
+						#08111f 0%,
+						#10213b 45%,
+						#f0b14d 160%
+					);
+					color: #ffffff;
+					font-family:
+						-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+						sans-serif;
+				}
+				.noscript-fallback__card {
+					max-width: 36rem;
+					padding: 2rem;
+					border: 1px solid rgba(255, 255, 255, 0.1);
+					border-radius: 1.5rem;
+					background: rgba(8, 17, 31, 0.75);
+					backdrop-filter: blur(8px);
+					text-align: center;
+				}
+				.noscript-fallback__eyebrow {
+					font-size: 0.75rem;
+					font-weight: 700;
+					letter-spacing: 0.25em;
+					text-transform: uppercase;
+					color: rgba(251, 191, 36, 0.85);
+					margin-bottom: 0.5rem;
+				}
+				.noscript-fallback__title {
+					font-size: clamp(1.5rem, 4vw, 2.25rem);
+					font-weight: 900;
+					letter-spacing: -0.02em;
+					margin: 0.5rem 0 1rem 0;
+				}
+				.noscript-fallback__body {
+					font-size: 1rem;
+					line-height: 1.5;
+					color: rgba(255, 255, 255, 0.7);
+					margin: 0 0 1.25rem 0;
+				}
+				.noscript-fallback__list {
+					text-align: left;
+					padding-left: 1.25rem;
+					margin: 0 0 1.25rem 0;
+					color: rgba(255, 255, 255, 0.75);
+					font-size: 0.9rem;
+					line-height: 1.6;
+				}
+				.noscript-fallback__footer {
+					font-size: 0.85rem;
+					color: rgba(255, 255, 255, 0.55);
+					margin: 0;
+				}
+			</style>
+			<div class="noscript-fallback" role="alert">
+				<div class="noscript-fallback__card">
+					<p class="noscript-fallback__eyebrow">JavaScript required</p>
+					<h1 class="noscript-fallback__title">
+						This marketplace needs JavaScript to run
+					</h1>
+					<p class="noscript-fallback__body">
+						Access Layer is an interactive client-rendered app. The
+						key actions on this page rely on JavaScript:
+					</p>
+					<ul class="noscript-fallback__list">
+						<li>Browsing and searching creator profiles</li>
+						<li>Connecting a Stellar wallet</li>
+						<li>Buying or selling creator keys</li>
+						<li>Viewing live prices and transaction status</li>
+					</ul>
+					<p class="noscript-fallback__footer">
+						Please enable JavaScript in your browser settings and
+						refresh the page to continue.
+					</p>
+				</div>
+			</div>
+		</noscript>
 		<div id="root"></div>
 		<script type="module" src="/src/main.tsx"></script>
 	</body>

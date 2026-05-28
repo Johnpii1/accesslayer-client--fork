@@ -3,7 +3,10 @@ import { courseService, type Course } from '@/services/course.service';
 import SearchBar from '@/components/common/SearchBar';
 import StickyFilterBar from '@/components/common/StickyFilterBar';
 import CreatorCard from '@/components/common/CreatorCard';
-import { CreatorGridSkeleton } from '@/components/common/CreatorSkeleton';
+import {
+	CreatorGridSkeleton,
+	CreatorProfileHeaderSkeleton,
+} from '@/components/common/CreatorSkeleton';
 import EmptyState from '@/components/common/EmptyState';
 import EmptySearchSuggestions from '@/components/common/EmptySearchSuggestions';
 import SectionDivider from '@/components/common/SectionDivider';
@@ -31,7 +34,13 @@ import PrecisionModeToggle, {
 } from '@/components/common/PrecisionModeToggle';
 import ScrollToTop from '@/components/common/ScrollToTop';
 import SectionErrorBoundary from '@/components/common/SectionErrorBoundary';
+import StaleDataWarning from '@/components/common/StaleDataWarning';
 import { useScrollPreservation } from '@/hooks/useScrollPreservation';
+import { useStaleData } from '@/hooks/useStaleData';
+import {
+	CREATOR_CARD_ENTRY_CLASS,
+	creatorCardEntryStyle,
+} from '@/utils/cardEntryAnimation.utils';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 const FEATURED_CREATOR_FACTS = [
@@ -182,6 +191,10 @@ const CreatorProfileLoadError: React.FC<CreatorProfileLoadErrorProps> = ({
 
 function LandingPage() {
 	const [creators, setCreators] = useState<Course[]>([]);
+	// Last successful fetch timestamp (#301). `null` means we've never
+	// resolved a load yet — the staleness helper treats that as "stale"
+	// so the warning surfaces if the load hangs.
+	const [creatorsFetchedAt, setCreatorsFetchedAt] = useState<number | null>(null);
 	const { isMismatch: isNetworkMismatch } = useNetworkMismatch();
 	const [isLoading, setIsLoading] = useState(true);
 	const [isFilterLoading, setIsFilterLoading] = useState(false);
@@ -209,6 +222,12 @@ function LandingPage() {
 	const [fetchRequestId, setFetchRequestId] = useState(0);
 	const [showRetryBanner, setShowRetryBanner] = useState(false);
 	const [finalFetchError, setFinalFetchError] = useState('');
+	// Simulated background key-price refresh (#305). A real implementation
+	// would be driven by a WebSocket or polling hook; here we flip the flag
+	// on a fixed cadence so the card's loading state is observable until that
+	// pipeline lands. `prefers-reduced-motion` disables the simulation so we
+	// don't surface a non-essential animation to users who opted out.
+	const [isPriceRefreshing, setIsPriceRefreshing] = useState(false);
 	const [page, setPage] = useState(() => {
 		if (typeof window === 'undefined') return 0;
 		const saved = window.sessionStorage.getItem(CREATOR_PAGE_KEY);
@@ -263,6 +282,20 @@ function LandingPage() {
 	}, []);
 
 	useEffect(() => {
+		if (typeof window === 'undefined') return;
+		const reduceMotion = window.matchMedia(
+			'(prefers-reduced-motion: reduce)'
+		).matches;
+		if (reduceMotion) return;
+		// Every 30s, simulate an ~800ms in-flight refresh.
+		const intervalId = window.setInterval(() => {
+			setIsPriceRefreshing(true);
+			window.setTimeout(() => setIsPriceRefreshing(false), 800);
+		}, 30_000);
+		return () => window.clearInterval(intervalId);
+	}, []);
+
+	useEffect(() => {
 		const fetchCreators = async () => {
 			setIsLoading(true);
 			setShowRetryBanner(false);
@@ -274,6 +307,9 @@ function LandingPage() {
 				} else {
 					setCreators(DEMO_CREATORS);
 				}
+				// Track the last successful fetch so the stale-data warning
+				// has a baseline to compare against (#301).
+				setCreatorsFetchedAt(Date.now());
 				setFetchRetryAttempt(0);
 			} catch {
 				if (fetchRetryAttempt < MAX_CREATOR_FETCH_RETRIES) {
@@ -396,6 +432,17 @@ function LandingPage() {
 		setFetchRequestId(requestId => requestId + 1);
 	};
 
+	// Stale-data detection (#301). 60s freshness window; when we cross it,
+	// the hook fires a background refresh exactly once until the next
+	// successful fetch resets the baseline.
+	const { stale: creatorsAreStale, ageMs: creatorsAgeMs } = useStaleData(
+		creatorsFetchedAt,
+		{
+			thresholdMs: 60_000,
+			onStale: handleRetryCreatorFetch,
+		}
+	);
+
 	const openTradeDialog = (side: TradeSide) => {
 		setTradeSide(side);
 		setTradeDialogOpen(true);
@@ -440,7 +487,11 @@ function LandingPage() {
 	};
 
 	return (
-		<main className="relative min-h-screen overflow-x-hidden bg-[linear-gradient(160deg,#08111f_0%,#10213b_45%,#f0b14d_160%)] px-6 pt-12 pb-28 md:px-12 md:pb-12">
+		// #306: the outer wrapper is just a decorative shell; the actual
+		// landmark structure is a top-level <header> sibling of the <main>
+		// below, so screen-reader landmark navigation lands directly on the
+		// marketplace content rather than on the brand banner.
+		<div className="relative min-h-screen overflow-x-hidden bg-[linear-gradient(160deg,#08111f_0%,#10213b_45%,#f0b14d_160%)] px-6 pt-12 pb-28 md:px-12 md:pb-12">
 			<div className="absolute left-[-4rem] top-[10%] size-72 rounded-full bg-amber-300/20 blur-[100px]" />
 			<div className="absolute bottom-[8%] right-[-3rem] size-72 rounded-full bg-emerald-300/15 blur-[100px]" />
 			<div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,186,73,0.1),transparent_40%),radial-gradient(circle_at_bottom_left,rgba(74,222,128,0.08),transparent_35%)]" />
@@ -471,9 +522,13 @@ function LandingPage() {
 					</div>
 				</MarketplaceSection>
 
-				<SectionDivider title="Discover creators" spacing="relaxed" />
+				<main
+					id="creator-marketplace-main"
+					aria-label="Creator marketplace"
+				>
+					<SectionDivider title="Discover creators" spacing="relaxed" />
 
-				<StickyFilterBar
+					<StickyFilterBar
 					eyebrow="Marketplace filters"
 					title="Find creators without losing your place"
 					description="Search by creator name or handle while you keep scrolling through the marketplace. The filter shell stays visible and compact so you can refine results without losing your place."
@@ -536,7 +591,7 @@ function LandingPage() {
 								</div>
 								<div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 opacity-50">
 									{pagedCreators.map(creator => (
-										<CreatorCard key={creator.id} creator={creator} />
+										<CreatorCard key={creator.id} creator={creator} isPriceRefreshing={isPriceRefreshing} />
 									))}
 								</div>
 							</div>
@@ -558,9 +613,32 @@ function LandingPage() {
 										{finalFetchError}
 									</div>
 								)}
+								{/* #301: subtle inline stale-data warning that
+									appears once the cached creator data is past
+									the 60s freshness window. The hook drives a
+									background refresh that resets the baseline
+									and clears the warning automatically. */}
+								{creatorsAreStale && (
+									<StaleDataWarning
+										stale={creatorsAreStale}
+										ageMs={creatorsAgeMs}
+										className="self-start"
+									/>
+								)}
 								<div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-									{pagedCreators.map(creator => (
-										<CreatorCard key={creator.id} creator={creator} />
+									{pagedCreators.map((creator, index) => (
+										// #300: staggered entry animation; the
+										// helper no-ops on prefers-reduced-motion.
+										<div
+											key={creator.id}
+											className={CREATOR_CARD_ENTRY_CLASS}
+											style={creatorCardEntryStyle(index)}
+										>
+											<CreatorCard
+												creator={creator}
+												isPriceRefreshing={isPriceRefreshing}
+											/>
+										</div>
 									))}
 								</div>
 								<div className="mt-8 flex items-center justify-center gap-3">
@@ -634,13 +712,17 @@ function LandingPage() {
 						sectionName="Creator Header"
 						minHeight={150}
 					>
-						<CreatorProfileHeader
-							name="Alex Rivers"
-							handle="arivers"
-							creatorId="arivers"
-							isVerified={true}
-							avatarUrl="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop"
-						/>
+						{isLoading ? (
+							<CreatorProfileHeaderSkeleton />
+						) : (
+							<CreatorProfileHeader
+								name="Alex Rivers"
+								handle="arivers"
+								creatorId="arivers"
+								isVerified={true}
+								avatarUrl="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop"
+							/>
+						)}
 					</SectionErrorBoundary>
 				</div>
 
@@ -688,14 +770,17 @@ function LandingPage() {
 										<MiniStatChip
 											label="Status"
 											value="Verified creator"
+											explanation="Creator has completed identity verification with Access Layer."
 										/>
 										<MiniStatChip
 											label="Audience"
 											value="12.4K collectors"
+											explanation="Number of wallets that currently hold at least one of this creator's keys."
 										/>
 										<MiniStatChip
 											label="Access"
 											value="Member-first drops"
+											explanation="Key holders see new drops a window before the public marketplace."
 										/>
 									</div>
 								</div>
@@ -806,6 +891,7 @@ function LandingPage() {
 				<MarketplaceSection spacing="relaxed">
 					<EmptyTransactionTimelineState />
 				</MarketplaceSection>
+				</main>
 			</div>
 
 			<TradeDialog
@@ -826,7 +912,7 @@ function LandingPage() {
 				description="Waiting for Stellar confirmation, then refreshing holdings."
 			/>
 			<ScrollToTop />
-		</main>
+		</div>
 	);
 }
 

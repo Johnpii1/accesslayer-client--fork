@@ -231,3 +231,62 @@
 		background-position: -100% 0;
 	}
 }
+
+/*
+ * Creator-card entry animation (#300).
+ *
+ * The card opts in by applying `.creator-card-entry` and inline-setting
+ * `--creator-card-entry-delay` (the helper at
+ * `src/utils/cardEntryAnimation.utils.ts` does this). When the
+ * `prefers-reduced-motion` media query is active, the animation is
+ * suppressed but the card still ends up at the same visual final state
+ * (no transform, no opacity reduction) because the keyframe end-state
+ * and the default rendered state are equivalent.
+ */
+@keyframes creator-card-entry {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.creator-card-entry {
+	animation: creator-card-entry 220ms ease-out both;
+	animation-delay: var(--creator-card-entry-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.creator-card-entry {
+		animation: none;
+	}
+}
+
+/*
+ * High-contrast / forced-colors overlay text guardrails (#313).
+ *
+ * The image-overlay pills on the creator card render text over a
+ * semi-transparent surface that loses contrast in forced-colors mode
+ * (Windows High Contrast). When forced-colors is active we drop the
+ * semi-transparent backdrop and pin the text + background to the
+ * system tokens (`Canvas`, `CanvasText`, `ButtonBorder`) which are
+ * guaranteed to meet the WCAG contrast ratio for the active high-
+ * contrast theme.
+ *
+ * Scoped to the overlay pill (`.creator-card-overlay-text` class
+ * applied on the relevant element) so non-overlay text is not touched.
+ */
+@media (forced-colors: active) {
+	.creator-card-overlay-text {
+		background: Canvas !important;
+		color: CanvasText !important;
+		border: 1px solid ButtonBorder !important;
+		backdrop-filter: none !important;
+	}
+	.creator-card-overlay-text * {
+		color: CanvasText !important;
+	}
+}
