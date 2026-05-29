@@ -1,24 +1,14 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Copy, Check, Share2 } from 'lucide-react';
 import showToast from '@/utils/toast.util';
+import appendUtmParams from '@/utils/utm.utils';
 import { Button } from '@/components/ui/button';
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogTitle,
-	DialogTrigger,
-} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import VerifiedBadge from '@/components/common/VerifiedBadge';
 import CreatorInitialsAvatar from '@/components/common/CreatorInitialsAvatar';
 import CreatorBio from '@/components/common/CreatorBio';
 import { formatCreatorHandle } from '@/utils/handleDisplay.utils';
-import CopySuccessAnnouncement from '@/components/common/CopySuccessAnnouncement';
-import {
-	COPY_SUCCESS_TOAST_ARIA_PROPS,
-	useCopySuccessAnnouncement,
-} from '@/hooks/useCopySuccessAnnouncement';
+import { CREATOR_CARD_MEDIA_RADIUS_CLASS } from '@/utils/creatorCardTokens';
 
 interface CreatorProfileHeaderProps {
 	name: string;
@@ -43,16 +33,16 @@ const CreatorProfileHeader: React.FC<CreatorProfileHeaderProps> = ({
 	className,
 }) => {
 	const [copied, setCopied] = useState(false);
-	const { announcement, announceCopySuccess } = useCopySuccessAnnouncement();
-	const [avatarLightboxOpen, setAvatarLightboxOpen] = useState(false);
-	const avatarTriggerRef = useRef<HTMLButtonElement>(null);
 
 	// Display-normalised handle; raw `handle` is preserved for any equality /
 	// URL construction the caller might do via the prop.
 	const displayHandle = formatCreatorHandle(handle);
 
 	const handleShare = async () => {
-		const url = window.location.href;
+		let url = window.location.href;
+
+		// Append UTM params when configured (no-op if none configured)
+		url = appendUtmParams(url);
 
 		if (navigator.share) {
 			try {
@@ -72,11 +62,8 @@ const CreatorProfileHeader: React.FC<CreatorProfileHeaderProps> = ({
 		// Fallback: copy to clipboard
 		try {
 			await navigator.clipboard.writeText(url);
-			announceCopySuccess('Profile link copied.');
 			setCopied(true);
-			showToast.success('Profile link copied to clipboard!', {
-				ariaProps: COPY_SUCCESS_TOAST_ARIA_PROPS,
-			});
+			showToast.success('Profile link copied to clipboard!');
 			setTimeout(() => setCopied(false), 2000);
 		} catch {
 			showToast.error('Failed to copy link');
@@ -84,14 +71,6 @@ const CreatorProfileHeader: React.FC<CreatorProfileHeaderProps> = ({
 	};
 
 	const canNativeShare = typeof navigator !== 'undefined' && !!navigator.share;
-
-	const avatar = (
-		<CreatorInitialsAvatar
-			name={name}
-			creatorId={creatorId}
-			imageSrc={avatarUrl}
-		/>
-	);
 
 	return (
 		<div
@@ -101,62 +80,16 @@ const CreatorProfileHeader: React.FC<CreatorProfileHeaderProps> = ({
 			)}
 		>
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-6">
-				{avatarUrl ? (
-					<Dialog
-						open={avatarLightboxOpen}
-						onOpenChange={setAvatarLightboxOpen}
-					>
-						<DialogTrigger asChild>
-							<button
-								type="button"
-								ref={avatarTriggerRef}
-								aria-label={`Open ${name} profile image`}
-								className="size-24 overflow-hidden rounded-2xl border-4 border-white/10 shadow-xl transition hover:border-amber-500/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 md:size-32"
-							>
-								{avatar}
-							</button>
-						</DialogTrigger>
-						<DialogContent
-							aria-labelledby="creator-profile-image-lightbox-title"
-							aria-describedby="creator-profile-image-lightbox-description"
-							className="border-white/10 bg-slate-950/95 p-4 sm:max-w-xl"
-							onCloseAutoFocus={event => {
-								event.preventDefault();
-								avatarTriggerRef.current?.focus();
-							}}
-							onEscapeKeyDown={() => {
-								setAvatarLightboxOpen(false);
-							}}
-						>
-							<DialogTitle
-								id="creator-profile-image-lightbox-title"
-								className="sr-only"
-							>
-								{name} profile image
-							</DialogTitle>
-							<DialogDescription
-								id="creator-profile-image-lightbox-description"
-								className="sr-only"
-							>
-								Expanded creator profile image. Press Escape or the
-								close button to dismiss it.
-							</DialogDescription>
-							<img
-								src={avatarUrl}
-								alt={`${name} profile image`}
-								className="max-h-[75vh] w-full rounded-2xl object-contain"
-							/>
-						</DialogContent>
-					</Dialog>
-				) : (
-					<div
-						className="size-24 overflow-hidden rounded-2xl border-4 border-white/10 shadow-xl md:size-32"
-						role="img"
-						aria-labelledby="creator-profile-name"
-					>
-						{avatar}
-					</div>
-				)}
+				<div
+					className={cn(
+						'size-24 overflow-hidden border-4 border-white/10 shadow-xl md:size-32',
+						CREATOR_CARD_MEDIA_RADIUS_CLASS
+					)}
+					role="img"
+					aria-labelledby="creator-profile-name"
+				>
+					<CreatorInitialsAvatar name={name} creatorId={creatorId} imageSrc={avatarUrl} />
+				</div>
 				<div className="min-w-0 space-y-1">
 					<div className="flex items-center gap-2 overflow-hidden">
 						<h1
@@ -204,17 +137,12 @@ const CreatorProfileHeader: React.FC<CreatorProfileHeaderProps> = ({
 						<Copy className="mr-2 size-4 text-amber-500" />
 					)}
 					<span className="hidden sm:inline">
-						{copied
-							? 'Copied!'
-							: canNativeShare
-								? 'Share Profile'
-								: 'Copy Profile Link'}
+						{copied ? 'Copied!' : canNativeShare ? 'Share Profile' : 'Copy Profile Link'}
 					</span>
 					<span className="sm:hidden">
 						{copied ? 'Copied' : canNativeShare ? 'Share' : 'Copy'}
 					</span>
 				</Button>
-				<CopySuccessAnnouncement message={announcement} />
 			</div>
 		</div>
 	);

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { courseService, type Course } from '@/services/course.service';
+import SkipToContent from '@/components/common/SkipToContent';
+import { cn } from '@/lib/utils';
 import SearchBar from '@/components/common/SearchBar';
 import StickyFilterBar from '@/components/common/StickyFilterBar';
 import CreatorCard from '@/components/common/CreatorCard';
@@ -24,8 +26,8 @@ import CreatorProfileHeader from '@/components/common/CreatorProfileHeader';
 import TransactionRetryNotice from '@/components/common/TransactionRetryNotice';
 import EmptyTransactionTimelineState from '@/components/common/EmptyTransactionTimelineState';
 import TradeDialog, { type TradeSide } from '@/components/common/TradeDialog';
-import PendingTxModal from '@/components/common/PendingTxModal';
 import NetworkMismatchBanner from '@/components/common/NetworkMismatchBanner';
+import StellarConnectionQualityBadge from '@/components/common/StellarConnectionQualityBadge';
 import { useNetworkMismatch } from '@/hooks/useNetworkMismatch';
 import showToast from '@/utils/toast.util';
 import { formatCompactNumber, formatNumber } from '@/utils/numberFormat.utils';
@@ -42,6 +44,8 @@ import {
 	creatorCardEntryStyle,
 } from '@/utils/cardEntryAnimation.utils';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import ClearedFiltersEmptyState from '@/components/common/ClearedFiltersEmptyState';
+import CreatorListPagination from '@/components/common/CreatorListPagination';
 
 const FEATURED_CREATOR_FACTS = [
 	{ label: 'Membership', value: 'Collectors Circle' },
@@ -210,7 +214,6 @@ function LandingPage() {
 	const [tradeSide, setTradeSide] = useState<TradeSide>('buy');
 	const [tradeDialogOpen, setTradeDialogOpen] = useState(false);
 	const [tradeSubmitting, setTradeSubmitting] = useState(false);
-	const [pendingTxOpen, setPendingTxOpen] = useState(false);
 	const [sortOption, setSortOption] = useState<SortOption>(() => {
 		if (typeof window === 'undefined') return 'featured';
 		const saved = window.localStorage.getItem(
@@ -451,7 +454,6 @@ function LandingPage() {
 	const handleConfirmTrade = async (amount: number) => {
 		const previousHoldings = featuredHoldings;
 		setTradeSubmitting(true);
-		setPendingTxOpen(true);
 
 		try {
 			showToast.loading(
@@ -482,16 +484,16 @@ function LandingPage() {
 			showToast.error('Trade failed. Holdings have been restored.');
 		} finally {
 			setTradeSubmitting(false);
-			setPendingTxOpen(false);
 		}
 	};
 
 	return (
-		// #306: the outer wrapper is just a decorative shell; the actual
-		// landmark structure is a top-level <header> sibling of the <main>
-		// below, so screen-reader landmark navigation lands directly on the
-		// marketplace content rather than on the brand banner.
 		<div className="relative min-h-screen overflow-x-hidden bg-[linear-gradient(160deg,#08111f_0%,#10213b_45%,#f0b14d_160%)] px-6 pt-12 pb-28 md:px-12 md:pb-12">
+			<SkipToContent targetId="main-creator-list" label="Skip to creator list" />
+			{/* #306: the outer wrapper is just a decorative shell; the actual
+			    landmark structure is a top-level <header> sibling of the <main>
+			    below, so screen-reader landmark navigation lands directly on the
+			    marketplace content rather than on the brand banner. */}
 			<div className="absolute left-[-4rem] top-[10%] size-72 rounded-full bg-amber-300/20 blur-[100px]" />
 			<div className="absolute bottom-[8%] right-[-3rem] size-72 rounded-full bg-emerald-300/15 blur-[100px]" />
 			<div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,186,73,0.1),transparent_40%),radial-gradient(circle_at_bottom_left,rgba(74,222,128,0.08),transparent_35%)]" />
@@ -519,6 +521,9 @@ function LandingPage() {
 						>
 							<Button>Buy Access</Button>
 						</UnavailableAction>
+					</div>
+					<div className="mt-4 flex justify-center">
+						<StellarConnectionQualityBadge />
 					</div>
 				</MarketplaceSection>
 
@@ -571,7 +576,7 @@ function LandingPage() {
 				<SectionDivider title="Marketplace results" spacing="default" />
 
 				<SectionErrorBoundary sectionName="Creator List" minHeight={400}>
-					<MarketplaceSection>
+				<MarketplaceSection id="main-creator-list" tabIndex={-1}>
 						<SectionHeading
 							title="Explore creators"
 							supportingText="Discover creator profiles and marketplace listings."
@@ -641,35 +646,12 @@ function LandingPage() {
 										</div>
 									))}
 								</div>
-								<div className="mt-8 flex items-center justify-center gap-3">
-									<Button
-										type="button"
-										variant="outline"
-										size="sm"
-										disabled={safePage === 0}
-										onClick={() =>
-											handlePageChange(Math.max(0, safePage - 1))
-										}
-									>
-										Previous
-									</Button>
-									<span className="marketplace-label-muted text-xs">
-										Page {safePage + 1} of {totalPages}
-									</span>
-									<Button
-										type="button"
-										variant="outline"
-										size="sm"
-										disabled={safePage >= totalPages - 1}
-										onClick={() =>
-											handlePageChange(
-												Math.min(totalPages - 1, safePage + 1)
-											)
-										}
-									>
-										Next
-									</Button>
-								</div>
+								<CreatorListPagination
+									page={safePage}
+									totalPages={totalPages}
+									onPageChange={handlePageChange}
+									className="mt-8"
+								/>
 								{safePage >= totalPages - 1 && (
 									<p
 										role="status"
@@ -682,18 +664,27 @@ function LandingPage() {
 							</div>
 						) : (
 							<div className="flex flex-col items-center gap-6 py-12">
-								<EmptyState
-									image="/images/no-results.png"
-									title="No creators found"
-									description={`We couldn't find any creators matching "${searchQuery}". Try a different name or handle.`}
-									onReset={handleResetSearch}
-								/>
-								{!hasInvalidSearchInput && (
-									<EmptySearchSuggestions
+								{trimmedSearchQuery.length === 0 ? (
+									<ClearedFiltersEmptyState
+										onBrowseAll={handleResetSearch}
 										className="w-full max-w-xl"
-										suggestions={searchSuggestions}
-										onSelect={setSearchQuery}
 									/>
+								) : (
+									<>
+										<EmptyState
+											image="/images/no-results.png"
+											title="No creators found"
+											description={`We couldn't find any creators matching "${searchQuery}". Try a different name or handle.`}
+											onReset={handleResetSearch}
+										/>
+										{!hasInvalidSearchInput && (
+											<EmptySearchSuggestions
+												className="w-full max-w-xl"
+												suggestions={searchSuggestions}
+												onSelect={setSearchQuery}
+											/>
+										)}
+									</>
 								)}
 							</div>
 						)}
@@ -826,22 +817,38 @@ function LandingPage() {
 									}
 								/>
 								{isNetworkMismatch && <NetworkMismatchBanner />}
-								<div className="hidden md:flex items-center gap-3">
-									<Button
-										className="rounded-xl"
-										onClick={() => openTradeDialog('buy')}
-										disabled={isNetworkMismatch}
+								<div className="relative">
+									<div
+										className={cn(
+											'hidden md:flex items-center gap-3 transition-opacity duration-200',
+											tradeSubmitting && 'pointer-events-none select-none opacity-60'
+										)}
+										aria-busy={tradeSubmitting || undefined}
 									>
-										Buy
-									</Button>
-									<Button
-										className="rounded-xl"
-										variant="outline"
-										onClick={() => openTradeDialog('sell')}
-										disabled={isNetworkMismatch}
-									>
-										Sell
-									</Button>
+										<Button
+											className="rounded-xl"
+											onClick={() => openTradeDialog('buy')}
+											disabled={isNetworkMismatch || tradeSubmitting}
+										>
+											Buy
+										</Button>
+										<Button
+											className="rounded-xl"
+											variant="outline"
+											onClick={() => openTradeDialog('sell')}
+											disabled={isNetworkMismatch || tradeSubmitting}
+										>
+											Sell
+										</Button>
+									</div>
+									{tradeSubmitting && (
+										<div className="absolute inset-0 hidden items-center justify-center rounded-[1.25rem] border border-white/10 bg-slate-950/65 backdrop-blur-sm md:flex">
+											<div className="flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-white/85 shadow-lg">
+												<div className="size-3.5 animate-spin rounded-full border-2 border-amber-400/25 border-t-amber-400" />
+												Submitting trade
+											</div>
+										</div>
+									)}
 								</div>
 							</div>
 						</MarketplaceSection>
@@ -862,23 +869,41 @@ function LandingPage() {
 							</div>
 						</div>
 						<div className="flex items-center gap-2">
-							<Button
-								className="rounded-xl"
-								size="sm"
-								onClick={() => openTradeDialog('buy')}
-								disabled={isNetworkMismatch}
-							>
-								Buy
-							</Button>
-							<Button
-								className="rounded-xl"
-								size="sm"
-								variant="outline"
-								onClick={() => openTradeDialog('sell')}
-								disabled={isNetworkMismatch}
-							>
-								Sell
-							</Button>
+							<div className="relative">
+								<div
+									className={cn(
+										'flex items-center gap-2 transition-opacity duration-200',
+										tradeSubmitting && 'pointer-events-none select-none opacity-60'
+									)}
+									aria-busy={tradeSubmitting || undefined}
+								>
+									<Button
+										className="rounded-xl"
+										size="sm"
+										onClick={() => openTradeDialog('buy')}
+										disabled={isNetworkMismatch || tradeSubmitting}
+									>
+										Buy
+									</Button>
+									<Button
+										className="rounded-xl"
+										size="sm"
+										variant="outline"
+										onClick={() => openTradeDialog('sell')}
+										disabled={isNetworkMismatch || tradeSubmitting}
+									>
+										Sell
+									</Button>
+								</div>
+								{tradeSubmitting && (
+									<div className="absolute inset-0 flex items-center justify-center rounded-xl border border-white/10 bg-slate-950/65 px-3 backdrop-blur-sm">
+										<div className="flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/80 px-3 py-1.5 text-[11px] font-bold text-white/85 shadow-lg">
+											<div className="size-3 animate-spin rounded-full border-2 border-amber-400/25 border-t-amber-400" />
+											Submitting trade
+										</div>
+									</div>
+								)}
+							</div>
 						</div>
 					</div>
 				</div>
@@ -902,14 +927,6 @@ function LandingPage() {
 				isSubmitting={tradeSubmitting}
 				onOpenChange={setTradeDialogOpen}
 				onConfirm={handleConfirmTrade}
-			/>
-			<PendingTxModal
-				open={pendingTxOpen}
-				onOpenChange={setPendingTxOpen}
-				isLoading={true}
-				blockDismissal={true}
-				title="Confirming trade"
-				description="Waiting for Stellar confirmation, then refreshing holdings."
 			/>
 			<ScrollToTop />
 		</div>
