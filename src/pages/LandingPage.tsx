@@ -46,6 +46,7 @@ import {
 } from '@/utils/cardEntryAnimation.utils';
 import { resolveCreatorKeyPriceStroops } from '@/utils/keyPriceDisplay.utils';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
+import { CREATOR_LIST_SORT_LAYOUT_TRANSITION } from '@/utils/creatorListSortTransition';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import ClearedFiltersEmptyState from '@/components/common/ClearedFiltersEmptyState';
 import CreatorListPagination from '@/components/common/CreatorListPagination';
@@ -651,12 +652,9 @@ function LandingPage() {
 											<motion.div
 												key={creator.id}
 												layout={!prefersReducedMotion}
-												transition={{
-													type: 'spring',
-													stiffness: 520,
-													damping: 42,
-													mass: 0.85,
-												}}
+												transition={
+													CREATOR_LIST_SORT_LAYOUT_TRANSITION
+												}
 												className={CREATOR_CARD_ENTRY_CLASS}
 												style={creatorCardEntryStyle(index, {
 													prefersReducedMotion,
