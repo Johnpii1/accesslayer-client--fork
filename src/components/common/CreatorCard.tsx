@@ -14,7 +14,9 @@ import {
 import RecentActivityBadge from '@/components/common/RecentActivityBadge';
 import toast from 'react-hot-toast';
 import showToast from '@/utils/toast.util';
-import { formatCompactNumber, formatNumber } from '@/utils/numberFormat.utils';
+import { formatCompactNumber } from '@/utils/numberFormat.utils';
+import { formatCreatorKeyPriceDisplay } from '@/utils/keyPriceDisplay.utils';
+import CreatorDropCountdown from '@/components/common/CreatorDropCountdown';
 import { formatCreatorHandle } from '@/utils/handleDisplay.utils';
 import { AsyncButton } from '@/components/ui/async-button';
 import { useNetworkMismatch } from '@/hooks/useNetworkMismatch';
@@ -116,6 +118,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({
 	};
 
 	const isRecentlyActive = (creator.volume24h ?? 0) > 0;
+	const keyPriceDisplay = formatCreatorKeyPriceDisplay(creator);
 
 	const handleCopyLink = () => {
 		const url = `${window.location.origin}/creator/${creator.id}`;
@@ -259,6 +262,10 @@ const CreatorCard: React.FC<CreatorCardProps> = ({
 
 				<CreatorBio bio={creator.description} variant="card" className="mt-2" />
 
+				{creator.nextDropAt ? (
+					<CreatorDropCountdown nextDropAt={creator.nextDropAt} />
+				) : null}
+
 				{creator.socialHandle ? (
 					<div className="marketplace-label-muted mt-2 flex items-center gap-1.5 text-xs">
 						<LinkIcon className="creator-action-icon text-amber-500/70" />
@@ -282,7 +289,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({
 				</div>
 
 				<div className="mt-3 flex flex-wrap gap-2">
-					<MiniStatChip label="Price" value={`${formatNumber(creator.price)} ETH`} />
+					<MiniStatChip label="Price" value={keyPriceDisplay} />
 					<MiniStatChip
 						label="Category"
 						value={creator.category || 'General'}
@@ -338,7 +345,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({
 										className="inline-block size-3 shrink-0 animate-spin rounded-full border-2 border-amber-400/30 border-t-amber-400"
 									/>
 								)}
-								<span>{`${formatNumber(creator.price)} ETH`}</span>
+								<span>{keyPriceDisplay}</span>
 								{isPriceRefreshing && (
 									<span className="sr-only">Refreshing price</span>
 								)}
@@ -356,7 +363,17 @@ const CreatorCard: React.FC<CreatorCardProps> = ({
 			</div>
 			<CreatorListRowDivider className="mt-4 mb-2" />
 
-			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+			<div
+				role="group"
+				aria-labelledby={`creator-card-actions-label-${creator.id}`}
+				className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+			>
+				<span
+					id={`creator-card-actions-label-${creator.id}`}
+					className="sr-only"
+				>
+					Actions for {creator.title}
+				</span>
 				<NetworkFeeHint className="shrink-0" />
 				<AsyncButton
 					onClick={handleBuy}
