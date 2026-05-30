@@ -20,6 +20,7 @@ export interface Course {
 	isVerified?: boolean;
 	volume24h?: number;
 	change24h?: number;
+	joinedAt?: string;
 }
 
 export interface GetCoursesParams {
