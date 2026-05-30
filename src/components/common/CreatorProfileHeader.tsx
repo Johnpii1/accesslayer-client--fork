@@ -8,6 +8,7 @@ import VerifiedBadge from '@/components/common/VerifiedBadge';
 import CreatorInitialsAvatar from '@/components/common/CreatorInitialsAvatar';
 import CreatorBio from '@/components/common/CreatorBio';
 import { formatCreatorHandle } from '@/utils/handleDisplay.utils';
+import CreatorHandleHoverCard from '@/components/common/CreatorHandleHoverCard';
 import { CREATOR_CARD_MEDIA_RADIUS_CLASS } from '@/utils/creatorCardTokens';
 
 interface CreatorProfileHeaderProps {
@@ -110,7 +111,9 @@ const CreatorProfileHeader: React.FC<CreatorProfileHeaderProps> = ({
 							CREATOR_PROFILE_SUBTITLE_WRAP_CLASS_NAME
 						)}
 					>
-						{displayHandle || `@${handle}`}
+						<CreatorHandleHoverCard handle={displayHandle || `@${handle}`}>
+							{displayHandle || `@${handle}`}
+						</CreatorHandleHoverCard>
 					</p>
 					{/* #315: profile bio auto-collapses with a Show more / less
 						toggle once long enough. Short bios render unchanged. */}

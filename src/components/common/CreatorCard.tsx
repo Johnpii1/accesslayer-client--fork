@@ -38,6 +38,7 @@ import CreatorListRowDivider from '@/components/common/CreatorListRowDivider';
 import BuyActionHelperText from '@/components/common/BuyActionHelperText';
 import NetworkFeeHint from '@/components/common/NetworkFeeHint';
 import CreatorBio from '@/components/common/CreatorBio';
+import CreatorHandleHoverCard from '@/components/common/CreatorHandleHoverCard';
 import { CREATOR_CARD_MEDIA_RADIUS_CLASS } from '@/utils/creatorCardTokens';
 
 interface CreatorCardProps {
@@ -257,7 +258,15 @@ const CreatorCard: React.FC<CreatorCardProps> = ({
 					{isRecentlyActive && <RecentActivityBadge />}
 				</div>
 				<p className="marketplace-label-muted font-jakarta text-sm">
-					{displayInstructorHandle}
+					<CreatorHandleHoverCard
+						handle={displayInstructorHandle}
+						volume24h={creator.volume24h}
+						change24h={creator.change24h}
+						creatorShareSupply={creator.creatorShareSupply}
+						isVerified={creator.isVerified}
+					>
+						{displayInstructorHandle}
+					</CreatorHandleHoverCard>
 				</p>
 
 				<CreatorBio bio={creator.description} variant="card" className="mt-2" />
@@ -269,7 +278,15 @@ const CreatorCard: React.FC<CreatorCardProps> = ({
 				{creator.socialHandle ? (
 					<div className="marketplace-label-muted mt-2 flex items-center gap-1.5 text-xs">
 						<LinkIcon className="creator-action-icon text-amber-500/70" />
-						<span className="truncate">{displaySocialHandle}</span>
+						<CreatorHandleHoverCard
+							handle={displaySocialHandle}
+							volume24h={creator.volume24h}
+							change24h={creator.change24h}
+							creatorShareSupply={creator.creatorShareSupply}
+							isVerified={creator.isVerified}
+						>
+							<span className="truncate">{displaySocialHandle}</span>
+						</CreatorHandleHoverCard>
 					</div>
 				) : (
 					<div
