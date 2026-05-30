@@ -16,8 +16,10 @@ import toast from 'react-hot-toast';
 import showToast from '@/utils/toast.util';
 import { formatCompactNumber } from '@/utils/numberFormat.utils';
 import { formatCreatorKeyPriceDisplay } from '@/utils/keyPriceDisplay.utils';
-import CreatorDropCountdown from '@/components/common/CreatorDropCountdown';
 import { formatCreatorHandle } from '@/utils/handleDisplay.utils';
+import { formatJoinDate } from '@/utils/formatJoinDate';
+import { useSystemTheme } from '@/utils/useSystemTheme';
+import { Tooltip } from '@/components/ui/tooltip';
 import { AsyncButton } from '@/components/ui/async-button';
 import { useNetworkMismatch } from '@/hooks/useNetworkMismatch';
 import { useTransactionTelemetry } from '@/hooks/useTransactionTelemetry';
@@ -59,6 +61,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({
 	className,
 	isPriceRefreshing = false,
 }) => {
+	const { isDarkMode } = useSystemTheme();
 	// Display-normalised handles. Raw values stay on `creator` for any
 	// equality / URL logic downstream.
 	const displayInstructorHandle =
@@ -222,7 +225,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({
 					name={creator.title}
 					creatorId={creator.id}
 					imageSrc={creator.thumbnail}
-					imageClassName="transition-transform duration-500 motion-reduce:transition-none motion-safe:md:group-hover:scale-[1.03] motion-reduce:md:group-hover:scale-100"
+					imageClassName={cn("transition-transform duration-500 motion-reduce:transition-none motion-safe:md:group-hover:scale-[1.03] motion-reduce:md:group-hover:scale-100", isDarkMode ? 'bg-gray-800' : 'bg-gray-100')}
 				/>
 				<div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 motion-reduce:transition-none motion-safe:md:group-hover:opacity-100 motion-reduce:md:group-hover:opacity-100" />
 				{creator.volume24h !== undefined && (
@@ -315,6 +318,18 @@ const CreatorCard: React.FC<CreatorCardProps> = ({
 				</div>
 				<CreatorListRowDivider className="my-4" />
 				<div className="mt-3 space-y-2">
+					{creator.joinedAt && (
+						<CardMetaRow
+							label="Join Date"
+							value={
+								<Tooltip content={<p>{new Date(creator.joinedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>}>
+									<span className="text-white/75 cursor-default truncate">
+										{formatJoinDate(creator.joinedAt)}
+									</span>
+								</Tooltip>
+							}
+						/>
+					)}
 					<CardMetaRow
 						label={
 							<span className="inline-flex items-center gap-1.5">

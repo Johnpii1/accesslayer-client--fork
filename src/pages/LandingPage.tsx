@@ -51,6 +51,7 @@ import { CREATOR_LIST_SORT_LAYOUT_TRANSITION } from '@/utils/creatorListSortTran
 import { AlertCircle, ChevronDown, RefreshCw } from 'lucide-react';
 import ClearedFiltersEmptyState from '@/components/common/ClearedFiltersEmptyState';
 import CreatorListPagination from '@/components/common/CreatorListPagination';
+import MarketplaceSidebar from '@/components/common/MarketplaceSidebar';
 
 const FEATURED_CREATOR_FACTS = [
 	{ label: 'Membership', value: 'Collectors Circle' },
@@ -537,6 +538,7 @@ function LandingPage() {
 			<div className="absolute left-[-4rem] top-[10%] size-72 rounded-full bg-amber-300/20 blur-[100px]" />
 			<div className="absolute bottom-[8%] right-[-3rem] size-72 rounded-full bg-emerald-300/15 blur-[100px]" />
 			<div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,186,73,0.1),transparent_40%),radial-gradient(circle_at_bottom_left,rgba(74,222,128,0.08),transparent_35%)]" />
+			<MarketplaceSidebar />
 			<div className="relative z-10 mx-auto max-w-7xl">
 				<MarketplaceSection
 					as="header"
