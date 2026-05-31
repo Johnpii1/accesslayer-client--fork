@@ -61,6 +61,7 @@ import { CREATOR_LIST_SORT_LAYOUT_TRANSITION } from '@/utils/creatorListSortTran
 import { AlertCircle, ChevronDown, RefreshCw } from 'lucide-react';
 import ClearedFiltersEmptyState from '@/components/common/ClearedFiltersEmptyState';
 import CreatorListPagination from '@/components/common/CreatorListPagination';
+import CreatorListGroupSeparator from '@/components/common/CreatorListGroupSeparator';
 import MarketplaceSidebar from '@/components/common/MarketplaceSidebar';
 
 const FEATURED_CREATOR_FACTS = [
@@ -109,6 +110,7 @@ const DEMO_CREATORS: Course[] = [
 		category: 'Art',
 		level: 'BEGINNER',
 		isVerified: true,
+		isPinned: true,
 		thumbnail:
 			'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
 	},
@@ -123,6 +125,7 @@ const DEMO_CREATORS: Course[] = [
 		category: 'Tech',
 		level: 'ADVANCED',
 		isVerified: true,
+		isPinned: true,
 		thumbnail:
 			'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
 	},
@@ -737,27 +740,58 @@ function LandingPage() {
 									)}
 									<LayoutGroup>
 										<div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-											{pagedCreators.map((creator, index) => (
-												// #300: staggered entry animation; the
-												// helper no-ops on prefers-reduced-motion.
-												// #355: layout transition when sort order changes.
-												<motion.div
-													key={creator.id}
-													layout={!prefersReducedMotion}
-													transition={
-														CREATOR_LIST_SORT_LAYOUT_TRANSITION
-													}
-													className={CREATOR_CARD_ENTRY_CLASS}
-													style={creatorCardEntryStyle(index, {
-														prefersReducedMotion,
-													})}
-												>
-													<CreatorCard
-														creator={creator}
-														isPriceRefreshing={isPriceRefreshing}
-													/>
-												</motion.div>
-											))}
+											{/* Render pinned creators first */}
+											{pagedCreators
+												.filter(creator => creator.isPinned)
+												.map((creator, index) => (
+													// #300: staggered entry animation; the
+													// helper no-ops on prefers-reduced-motion.
+													// #355: layout transition when sort order changes.
+													<motion.div
+														key={creator.id}
+														layout={!prefersReducedMotion}
+														transition={
+															CREATOR_LIST_SORT_LAYOUT_TRANSITION
+														}
+														className={CREATOR_CARD_ENTRY_CLASS}
+														style={creatorCardEntryStyle(index, {
+															prefersReducedMotion,
+														})}
+													>
+														<CreatorCard
+															creator={creator}
+															isPriceRefreshing={isPriceRefreshing}
+														/>
+													</motion.div>
+												))}
+
+											{/* Separator between pinned and unpinned */}
+											{pagedCreators.some(creator => creator.isPinned) &&
+												pagedCreators.some(creator => !creator.isPinned) && (
+													<CreatorListGroupSeparator label="Other creators" />
+												)}
+
+											{/* Render unpinned creators */}
+											{pagedCreators
+												.filter(creator => !creator.isPinned)
+												.map((creator, index) => (
+													<motion.div
+														key={creator.id}
+														layout={!prefersReducedMotion}
+														transition={
+															CREATOR_LIST_SORT_LAYOUT_TRANSITION
+														}
+														className={CREATOR_CARD_ENTRY_CLASS}
+														style={creatorCardEntryStyle(index, {
+															prefersReducedMotion,
+														})}
+													>
+														<CreatorCard
+															creator={creator}
+															isPriceRefreshing={isPriceRefreshing}
+														/>
+													</motion.div>
+												))}
 										</div>
 									</LayoutGroup>
 									<CreatorListPagination
