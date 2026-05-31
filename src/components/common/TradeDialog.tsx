@@ -15,7 +15,11 @@ import { formatDisplayKeyPrice } from '@/utils/keyPriceDisplay.utils';
 import PercentageBadge from '@/components/common/PercentageBadge';
 import NetworkFeeHint from '@/components/common/NetworkFeeHint';
 import { TRADE_FEE_ESTIMATE } from '@/constants/fees';
-import { formatTransactionFeeDisplay } from '@/utils/transactionFee.utils';
+import {
+	fetchTradeNetworkFeeEstimate,
+	formatTransactionFeeDisplay,
+	type NetworkFeeDataProvider,
+} from '@/utils/transactionFee.utils';
 import { normalizeCreatorDisplayName } from '@/utils/creatorDisplayName.utils';
 
 export type TradeSide = 'buy' | 'sell';
@@ -30,7 +34,12 @@ export interface TradeDialogProps {
 	onOpenChange: (open: boolean) => void;
 	onConfirm: (amount: number) => Promise<void> | void;
 	isSubmitting?: boolean;
+	networkFeeEstimateProvider?: NetworkFeeDataProvider;
 }
+
+type NetworkFeeEstimateState =
+	| { status: 'idle' | 'loading' | 'error'; fee: null }
+	| { status: 'success'; fee: number };
 
 const TradeDialog: React.FC<TradeDialogProps> = ({
 	open,
@@ -41,8 +50,11 @@ const TradeDialog: React.FC<TradeDialogProps> = ({
 	onOpenChange,
 	onConfirm,
 	isSubmitting = false,
+	networkFeeEstimateProvider,
 }) => {
 	const [amountText, setAmountText] = useState('1');
+	const [networkFeeEstimate, setNetworkFeeEstimate] =
+		useState<NetworkFeeEstimateState>({ status: 'idle', fee: null });
 	const amountInputRef = useRef<HTMLInputElement | null>(null);
 
 	useEffect(() => {
@@ -65,9 +77,60 @@ const TradeDialog: React.FC<TradeDialogProps> = ({
 	const title = side === 'buy' ? 'Buy keys' : 'Sell keys';
 	const confirmLabel = side === 'buy' ? 'Confirm buy' : 'Confirm sell';
 	const estimatedNetworkFee = formatTransactionFeeDisplay(
-		TRADE_FEE_ESTIMATE.DEFAULT_NETWORK_FEE,
+		networkFeeEstimate.status === 'success'
+			? networkFeeEstimate.fee
+			: TRADE_FEE_ESTIMATE.DEFAULT_NETWORK_FEE,
 		{ unit: TRADE_FEE_ESTIMATE.UNIT }
 	);
+	const networkFeeCopy =
+		networkFeeEstimate.status === 'loading'
+			? 'Estimating...'
+			: networkFeeEstimate.status === 'error'
+				? 'Cannot estimate network fee'
+				: estimatedNetworkFee;
+
+	useEffect(() => {
+		if (!open) {
+			setNetworkFeeEstimate({ status: 'idle', fee: null });
+			return;
+		}
+
+		if (!amountValid || !networkFeeEstimateProvider) {
+			setNetworkFeeEstimate({ status: 'error', fee: null });
+			return;
+		}
+
+		let cancelled = false;
+		setNetworkFeeEstimate({ status: 'loading', fee: null });
+
+		fetchTradeNetworkFeeEstimate(networkFeeEstimateProvider, {
+			side,
+			amount: parsedAmount,
+		})
+			.then(fee => {
+				if (cancelled) return;
+				setNetworkFeeEstimate(
+					fee == null
+						? { status: 'error', fee: null }
+						: { status: 'success', fee }
+				);
+			})
+			.catch(() => {
+				if (!cancelled) {
+					setNetworkFeeEstimate({ status: 'error', fee: null });
+				}
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [
+		amountValid,
+		networkFeeEstimateProvider,
+		open,
+		parsedAmount,
+		side,
+	]);
 
 	return (
 		<Dialog
@@ -147,13 +210,12 @@ const TradeDialog: React.FC<TradeDialogProps> = ({
 								/>
 							)}
 					</div>
-					{side === 'buy' && (
-						<NetworkFeeHint
-							variant="text"
-							fee={estimatedNetworkFee}
-							className="text-white/45"
-						/>
-					)}
+					<NetworkFeeHint
+						variant="text"
+						label="Approx. network fee"
+						fee={networkFeeCopy}
+						className="text-white/45"
+					/>
 					{side === 'sell' && parsedAmount > availableHoldings && (
 						<div className="text-xs text-red-300">
 							You can’t sell more than your current holdings.
