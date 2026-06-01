@@ -52,12 +52,13 @@ vi.mock('framer-motion', async () => {
 		LayoutGroup: ({ children }: { children: ReactNode }) =>
 			React.createElement(React.Fragment, null, children),
 		motion: {
-			div: ({
-				children,
-				layout: _layout,
-				transition: _transition,
-				...props
-			}: MotionDivProps) => React.createElement('div', props, children),
+			div: ({ children, ...props }: MotionDivProps) => {
+				const { layout, transition, ...divProps } = props;
+				void layout;
+				void transition;
+
+				return React.createElement('div', divProps, children);
+			},
 			button: ({ children, ...props }: ComponentProps<'button'>) =>
 				React.createElement('button', props, children),
 		},
