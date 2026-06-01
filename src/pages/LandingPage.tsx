@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LayoutGroup, motion } from 'framer-motion';
 import { useSearchParams } from 'react-router';
 import { courseService, type Course } from '@/services/course.service';
@@ -16,6 +16,7 @@ import EmptyState from '@/components/common/EmptyState';
 import EmptySearchSuggestions from '@/components/common/EmptySearchSuggestions';
 import SectionDivider from '@/components/common/SectionDivider';
 import { Button } from '@/components/ui/button';
+import { Kbd } from '@/components/ui/kbd';
 import { UnavailableAction } from '@/components/ui/unavailable-action';
 import SectionHeading from '@/components/common/SectionHeading';
 import CompactSectionSubtitle from '@/components/common/CompactSectionSubtitle';
@@ -198,9 +199,34 @@ const FETCH_RETRY_ACTION_LABEL = 'Try again';
 const DEMO_HELD_KEY_QUANTITIES = [0, 2, 1] as const;
 const FINAL_FETCH_ERROR_COPY =
 	'Unable to load live creators right now. Showing fallback creators.';
+const CREATOR_REFRESH_SHORTCUT_LABEL = 'Ctrl/Cmd + Alt + R';
+const CREATOR_REFRESH_SHORTCUT_DURATION_MS = 1800;
 
 const getFetchRetryHelperCopy = (attempt: number, maxAttempts: number) =>
 	`We couldn't load live creators yet. Retrying automatically (attempt ${attempt} of ${maxAttempts}).`;
+
+const isEditableShortcutTarget = (target: EventTarget | null) => {
+	if (!(target instanceof Element)) return false;
+
+	let element: Element | null = target;
+	while (element) {
+		if (
+			element.matches('input, textarea, select, [role="textbox"]') ||
+			(element instanceof HTMLElement && element.isContentEditable)
+		) {
+			return true;
+		}
+		element = element.parentElement;
+	}
+
+	return false;
+};
+
+const isCreatorRefreshShortcut = (event: KeyboardEvent) =>
+	(event.ctrlKey || event.metaKey) &&
+	event.altKey &&
+	!event.shiftKey &&
+	event.key.toLowerCase() === 'r';
 
 type SortOption = 'featured' | 'price-asc' | 'price-desc' | 'supply-desc';
 
@@ -298,6 +324,8 @@ function LandingPage() {
 	// pipeline lands. `prefers-reduced-motion` disables the simulation so we
 	// don't surface a non-essential animation to users who opted out.
 	const [isPriceRefreshing, setIsPriceRefreshing] = useState(false);
+	const [showShortcutConfirmation, setShowShortcutConfirmation] =
+		useState(false);
 	const [page, setPage] = useState(() => {
 		if (typeof window === 'undefined') return 0;
 		const saved = window.sessionStorage.getItem(CREATOR_PAGE_KEY);
@@ -305,6 +333,7 @@ function LandingPage() {
 		return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
 	});
 	const pendingScrollRestoreRef = useRef<number | null>(null);
+	const shortcutConfirmationTimerRef = useRef<number | null>(null);
 
 	// Keep refs in sync with state
 	useEffect(() => {
@@ -402,6 +431,14 @@ function LandingPage() {
 			window.setTimeout(() => setIsPriceRefreshing(false), 800);
 		}, 30_000);
 		return () => window.clearInterval(intervalId);
+	}, []);
+
+	useEffect(() => {
+		return () => {
+			if (shortcutConfirmationTimerRef.current != null) {
+				window.clearTimeout(shortcutConfirmationTimerRef.current);
+			}
+		};
 	}, []);
 
 	useEffect(() => {
@@ -545,12 +582,44 @@ function LandingPage() {
 
 	const handleResetSearch = () => setSearchQuery('');
 
-	const handleRetryCreatorFetch = () => {
+	const handleRetryCreatorFetch = useCallback(() => {
 		setFinalFetchError('');
 		setShowRetryBanner(false);
 		setFetchRetryAttempt(0);
 		setFetchRequestId(requestId => requestId + 1);
-	};
+	}, []);
+
+	const showCreatorRefreshShortcutConfirmation = useCallback(() => {
+		if (shortcutConfirmationTimerRef.current != null) {
+			window.clearTimeout(shortcutConfirmationTimerRef.current);
+		}
+
+		setShowShortcutConfirmation(true);
+		shortcutConfirmationTimerRef.current = window.setTimeout(() => {
+			setShowShortcutConfirmation(false);
+			shortcutConfirmationTimerRef.current = null;
+		}, CREATOR_REFRESH_SHORTCUT_DURATION_MS);
+	}, []);
+
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (
+				event.defaultPrevented ||
+				event.repeat ||
+				!isCreatorRefreshShortcut(event) ||
+				isEditableShortcutTarget(event.target)
+			) {
+				return;
+			}
+
+			event.preventDefault();
+			handleRetryCreatorFetch();
+			showCreatorRefreshShortcutConfirmation();
+		};
+
+		window.addEventListener('keydown', handleKeyDown);
+		return () => window.removeEventListener('keydown', handleKeyDown);
+	}, [handleRetryCreatorFetch, showCreatorRefreshShortcutConfirmation]);
 
 	// Stale-data detection (#301). 60s freshness window; when we cross it,
 	// the hook fires a background refresh exactly once until the next
@@ -657,6 +726,19 @@ function LandingPage() {
 				targetId="main-creator-list"
 				label="Skip to creator list"
 			/>
+			{showShortcutConfirmation && (
+				<div
+					role="status"
+					aria-live="polite"
+					className="fixed right-4 top-4 z-50 inline-flex items-center gap-2 rounded-full border border-amber-400/35 bg-slate-950/90 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-amber-100 shadow-2xl shadow-black/30 backdrop-blur-md md:right-6 md:top-6"
+				>
+					<RefreshCw
+						className="size-3.5 animate-spin motion-reduce:animate-none"
+						aria-hidden="true"
+					/>
+					Creator list refresh requested
+				</div>
+			)}
 			{/* #306: the outer wrapper is just a decorative shell; the actual
 			    landmark structure is a top-level <header> sibling of the <main>
 			    below, so screen-reader landmark navigation lands directly on the
@@ -741,6 +823,26 @@ function LandingPage() {
 										Supply: High to low
 									</option>
 								</select>
+							</div>
+							<div
+								aria-label={`${CREATOR_REFRESH_SHORTCUT_LABEL} refreshes creator list data`}
+								className="flex flex-wrap items-center gap-2 text-xs text-white/55"
+							>
+								<span className="font-semibold uppercase tracking-[0.16em] text-white/40">
+									Shortcut
+								</span>
+								<span className="inline-flex items-center gap-1" aria-hidden="true">
+									<Kbd className="border border-white/10 bg-white/10 text-white/70">
+										Ctrl/Cmd
+									</Kbd>
+									<Kbd className="border border-white/10 bg-white/10 text-white/70">
+										Alt
+									</Kbd>
+									<Kbd className="border border-white/10 bg-white/10 text-white/70">
+										R
+									</Kbd>
+								</span>
+								<span>Refresh creators</span>
 							</div>
 						</div>
 					</StickyFilterBar>
