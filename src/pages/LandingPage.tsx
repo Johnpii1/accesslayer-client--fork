@@ -30,7 +30,6 @@ import EmptyTransactionTimelineState from '@/components/common/EmptyTransactionT
 import TradeDialog, { type TradeSide } from '@/components/common/TradeDialog';
 import NetworkMismatchBanner from '@/components/common/NetworkMismatchBanner';
 import StellarConnectionQualityBadge from '@/components/common/StellarConnectionQualityBadge';
-import { useEthersProvider } from '@/hooks/useEthersProvider';
 import { useNetworkMismatch } from '@/hooks/useNetworkMismatch';
 import showToast from '@/utils/toast.util';
 import { getSignatureErrorMessage } from '@/utils/errorHandling.utils';
@@ -265,7 +264,6 @@ function LandingPage() {
 	const [tradeSide, setTradeSide] = useState<TradeSide>('buy');
 	const [tradeDialogOpen, setTradeDialogOpen] = useState(false);
 	const [tradeSubmitting, setTradeSubmitting] = useState(false);
-	const tradeFeeEstimateProvider = useEthersProvider();
 	const prefersReducedMotion = usePrefersReducedMotion();
 	const [sortOption, setSortOption] = useState<SortOption>(() => {
 		if (typeof window === 'undefined') return 'featured';
@@ -1246,7 +1244,6 @@ function LandingPage() {
 				availableHoldings={featuredHoldings}
 				keyPriceStroops={resolveCreatorKeyPriceStroops(featuredCreator)}
 				isSubmitting={tradeSubmitting}
-				networkFeeEstimateProvider={tradeFeeEstimateProvider}
 				onOpenChange={setTradeDialogOpen}
 				onConfirm={handleConfirmTrade}
 			/>
