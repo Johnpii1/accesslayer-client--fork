@@ -12,6 +12,8 @@ export interface Course {
 	/** ISO timestamp for the next scheduled drop, when applicable. */
 	nextDropAt?: string;
 	creatorShareSupply?: number;
+	/** Number of wallets currently holding at least one creator key. */
+	holderCount?: number;
 	instructorId: string;
 	thumbnail?: string;
 	category: string;

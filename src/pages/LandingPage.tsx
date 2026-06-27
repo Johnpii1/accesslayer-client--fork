@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LayoutGroup, motion } from 'framer-motion';
 import { useSearchParams } from 'react-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { courseService, type Course } from '@/services/course.service';
 import SkipToContent from '@/components/common/SkipToContent';
 import { cn } from '@/lib/utils';
@@ -77,6 +78,8 @@ const FEATURED_CREATOR_FACTS = [
 
 const FEATURED_CREATOR_FOLLOWER_COUNT: number | null = null;
 const FEATURED_CREATOR_KEY_HOLDER_COUNT = 0;
+
+export const CREATOR_LIST_QUERY_KEY = ['creators'] as const;
 
 const getFeaturedCreatorKeyHolderCopy = (count: number | null) => {
 	if (count == null) {
@@ -279,6 +282,7 @@ function LandingPage() {
 		null
 	);
 	const { isMismatch: isNetworkMismatch } = useNetworkMismatch();
+	const queryClient = useQueryClient();
 	const [isLoading, setIsLoading] = useState(true);
 	const [isFilterLoading, setIsFilterLoading] = useState(false);
 	const [searchParams, setSearchParams] = useSearchParams();
@@ -299,7 +303,10 @@ function LandingPage() {
 	const prefersReducedMotion = usePrefersReducedMotion();
 	const [sortOption, setSortOption] = useState<SortOption>(() => {
 		const sort = searchParams.get('sort') as SortOption | null;
-		if (sort && ['featured', 'price-asc', 'price-desc', 'supply-desc'].includes(sort)) {
+		if (
+			sort &&
+			['featured', 'price-asc', 'price-desc', 'supply-desc'].includes(sort)
+		) {
 			sortOptionRef.current = sort;
 			return sort;
 		}
@@ -386,7 +393,13 @@ function LandingPage() {
 			setSearchQuery('');
 		}
 		const sort = searchParams.get('sort') as SortOption | null;
-		if (sort && ['featured', 'price-asc', 'price-desc', 'supply-desc'].includes(sort) && sort !== sortOptionRef.current) {
+		if (
+			sort &&
+			['featured', 'price-asc', 'price-desc', 'supply-desc'].includes(
+				sort
+			) &&
+			sort !== sortOptionRef.current
+		) {
 			setSortOption(sort);
 		} else if (sort === null && sortOptionRef.current !== 'featured') {
 			setSortOption('featured');
@@ -441,48 +454,60 @@ function LandingPage() {
 		};
 	}, []);
 
+	const creatorsQuery = useQuery({
+		queryKey: CREATOR_LIST_QUERY_KEY,
+		queryFn: () => courseService.getCourses(),
+	});
+
 	useEffect(() => {
-		const fetchCreators = async () => {
+		if (creatorsQuery.isFetching) {
 			setIsLoading(true);
 			setShowRetryBanner(false);
 			setFinalFetchError('');
-			try {
-				const data = await courseService.getCourses();
-				if (data && data.length > 0) {
-					setCreators(data);
-				} else {
-					setCreators(DEMO_CREATORS);
-				}
-				// Track the last successful fetch so the stale-data warning
-				// has a baseline to compare against (#301).
-				setCreatorsFetchedAt(Date.now());
-				setFetchRetryAttempt(0);
-			} catch {
-				if (fetchRetryAttempt < MAX_CREATOR_FETCH_RETRIES) {
-					const nextAttempt = fetchRetryAttempt + 1;
-					setShowRetryBanner(true);
-					const backoffDelay = Math.min(
-						BASE_RETRY_DELAY_MS * 2 ** fetchRetryAttempt,
-						5000
-					);
-					window.setTimeout(
-						() => setFetchRetryAttempt(nextAttempt),
-						backoffDelay
-					);
-					return;
-				}
+		}
+	}, [creatorsQuery.isFetching]);
 
-				setFinalFetchError(FINAL_FETCH_ERROR_COPY);
-				setShowRetryBanner(false);
-				setFetchRetryAttempt(0);
-				setCreators(DEMO_CREATORS);
-			} finally {
-				setTimeout(() => setIsLoading(false), 800);
-			}
-		};
+	useEffect(() => {
+		if (!creatorsQuery.isSuccess) return;
 
-		fetchCreators();
-	}, [fetchRetryAttempt, fetchRequestId]);
+		const data = creatorsQuery.data;
+		setCreators(data && data.length > 0 ? data : DEMO_CREATORS);
+		// Track the last successful fetch so the stale-data warning
+		// has a baseline to compare against (#301).
+		setCreatorsFetchedAt(Date.now());
+		setFetchRetryAttempt(0);
+		setTimeout(() => setIsLoading(false), 800);
+	}, [creatorsQuery.data, creatorsQuery.isSuccess]);
+
+	useEffect(() => {
+		if (!creatorsQuery.isError) return;
+
+		if (fetchRetryAttempt < MAX_CREATOR_FETCH_RETRIES) {
+			const nextAttempt = fetchRetryAttempt + 1;
+			setShowRetryBanner(true);
+			const backoffDelay = Math.min(
+				BASE_RETRY_DELAY_MS * 2 ** fetchRetryAttempt,
+				5000
+			);
+			window.setTimeout(
+				() => setFetchRetryAttempt(nextAttempt),
+				backoffDelay
+			);
+			setTimeout(() => setIsLoading(false), 800);
+			return;
+		}
+
+		setFinalFetchError(FINAL_FETCH_ERROR_COPY);
+		setShowRetryBanner(false);
+		setFetchRetryAttempt(0);
+		setCreators(DEMO_CREATORS);
+		setTimeout(() => setIsLoading(false), 800);
+	}, [creatorsQuery.isError, fetchRetryAttempt]);
+
+	useEffect(() => {
+		if (fetchRetryAttempt === 0 && fetchRequestId === 0) return;
+		void queryClient.invalidateQueries({ queryKey: CREATOR_LIST_QUERY_KEY });
+	}, [fetchRetryAttempt, fetchRequestId, queryClient]);
 
 	const searchSuggestions = useMemo(() => {
 		const fromCategories = creators
@@ -557,14 +582,13 @@ function LandingPage() {
 		const start = safePage * PAGE_SIZE;
 		return filteredCreators.slice(start, start + PAGE_SIZE);
 	}, [filteredCreators, safePage]);
-	const featuredCreatorKeyHolderCopy = getFeaturedCreatorKeyHolderCopy(
-		FEATURED_CREATOR_KEY_HOLDER_COUNT
-	);
-
 	// Choose the featured creator from live data when available, otherwise
 	// fall back to the demo featured creator. This keeps the profile panel
 	// reactive to backend updates (supply, price, etc.).
 	const featuredCreator = creators.length > 0 ? creators[0] : DEMO_CREATORS[0];
+	const featuredCreatorKeyHolderCopy = getFeaturedCreatorKeyHolderCopy(
+		featuredCreator.holderCount ?? FEATURED_CREATOR_KEY_HOLDER_COUNT
+	);
 
 	useEffect(() => {
 		if (pendingScrollRestoreRef.current == null) return;
@@ -831,7 +855,10 @@ function LandingPage() {
 								<span className="font-semibold uppercase tracking-[0.16em] text-white/40">
 									Shortcut
 								</span>
-								<span className="inline-flex items-center gap-1" aria-hidden="true">
+								<span
+									className="inline-flex items-center gap-1"
+									aria-hidden="true"
+								>
 									<Kbd className="border border-white/10 bg-white/10 text-white/70">
 										Ctrl/Cmd
 									</Kbd>
@@ -930,14 +957,20 @@ function LandingPage() {
 													>
 														<CreatorCard
 															creator={creator}
-															isPriceRefreshing={isPriceRefreshing}
+															isPriceRefreshing={
+																isPriceRefreshing
+															}
 														/>
 													</motion.div>
 												))}
 
 											{/* Separator between pinned and unpinned */}
-											{pagedCreators.some(creator => creator.isPinned) &&
-												pagedCreators.some(creator => !creator.isPinned) && (
+											{pagedCreators.some(
+												creator => creator.isPinned
+											) &&
+												pagedCreators.some(
+													creator => !creator.isPinned
+												) && (
 													<CreatorListGroupSeparator label="Other creators" />
 												)}
 
@@ -958,7 +991,9 @@ function LandingPage() {
 													>
 														<CreatorCard
 															creator={creator}
-															isPriceRefreshing={isPriceRefreshing}
+															isPriceRefreshing={
+																isPriceRefreshing
+															}
 														/>
 													</motion.div>
 												))}

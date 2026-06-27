@@ -1,7 +1,9 @@
 import type { ComponentProps, ReactNode } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import LandingPage from '@/pages/LandingPage';
+import LandingPage, { CREATOR_LIST_QUERY_KEY } from '@/pages/LandingPage';
 import { courseService, type Course } from '@/services/course.service';
 
 vi.mock('@/services/course.service', () => ({
@@ -21,8 +23,7 @@ vi.mock('@/components/common/StellarConnectionQualityBadge', async () => {
 	const React = await import('react');
 
 	return {
-		default: () =>
-			React.createElement('div', { role: 'status' }, 'RPC good'),
+		default: () => React.createElement('div', { role: 'status' }, 'RPC good'),
 	};
 });
 
@@ -75,6 +76,7 @@ const creatorList: Course[] = [
 		price: 0.05,
 		priceStroops: 500_000,
 		creatorShareSupply: 120,
+		holderCount: 12,
 		instructorId: 'arivers',
 		category: 'Art',
 		level: 'BEGINNER',
@@ -98,9 +100,25 @@ const mockMatchMedia = () => {
 	});
 };
 
+const createTestQueryClient = () =>
+	new QueryClient({
+		defaultOptions: {
+			queries: { retry: false, gcTime: Infinity },
+		},
+	});
+
 const renderLandingPage = async () => {
-	render(<LandingPage />);
+	const queryClient = createTestQueryClient();
+	render(
+		<QueryClientProvider client={queryClient}>
+			<MemoryRouter>
+				<LandingPage />
+			</MemoryRouter>
+		</QueryClientProvider>
+	);
 	await waitFor(() => expect(mockGetCourses).toHaveBeenCalledTimes(1));
+
+	return { queryClient };
 };
 
 describe('LandingPage creator refresh shortcut', () => {
@@ -134,6 +152,28 @@ describe('LandingPage creator refresh shortcut', () => {
 			await screen.findByText('Creator list refresh requested')
 		).toBeInTheDocument();
 		await waitFor(() => expect(mockGetCourses).toHaveBeenCalledTimes(2));
+	});
+
+	it('updates the featured holder count after the creator query cache is invalidated and refetched', async () => {
+		const updatedCreatorList: Course[] = [
+			{
+				...creatorList[0],
+				holderCount: 34,
+			},
+		];
+		mockGetCourses
+			.mockResolvedValueOnce(creatorList)
+			.mockResolvedValueOnce(updatedCreatorList);
+
+		const { queryClient } = await renderLandingPage();
+
+		expect(await screen.findByText('12 key holders')).toBeInTheDocument();
+
+		await queryClient.invalidateQueries({ queryKey: CREATOR_LIST_QUERY_KEY });
+
+		expect(await screen.findByText('34 key holders')).toBeInTheDocument();
+		expect(screen.queryByText('12 key holders')).not.toBeInTheDocument();
+		expect(mockGetCourses).toHaveBeenCalledTimes(2);
 	});
 
 	it('does not trigger while focus is inside text inputs or textareas', async () => {
