@@ -56,9 +56,14 @@ class CourseService extends BaseApiService {
 	}
 
 	// Get single course - GET /courses/:id
-	async getCourse(courseId: string): Promise<Course> {
+	async getCourse(
+		courseId: string,
+		options: { forceRefresh?: boolean } = {}
+	): Promise<Course> {
 		const cacheKey = `course_${courseId}`;
-		const cached = cacheManager.get<Course>(cacheKey);
+		const cached = options.forceRefresh
+			? undefined
+			: cacheManager.get<Course>(cacheKey);
 		if (cached) return cached;
 
 		try {
